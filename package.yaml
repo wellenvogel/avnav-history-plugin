@@ -1,0 +1,20 @@
+# nfpm example config file
+#
+# check https://nfpm.goreleaser.com/configuration for detailed usage
+#
+name: "avnav-barograph-plugin"
+arch: "all"
+platform: "linux"
+version: "v1.0.0"
+section: "default"
+priority: "extra"
+depends:
+- avnav
+maintainer: "Andreas Vogel <andreas@sellenvogel.de>"
+description: |
+  AvNav plugin to display a barograph history
+homepage: "https://example.com"
+license: "MIT"
+contents:
+- src: ./plugin.*
+  dst: /usr/lib/avnav/plugins/barograph
