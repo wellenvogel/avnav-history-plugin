@@ -183,6 +183,21 @@ class Plugin:
         return self.api.getConfigValue(name,cf.get('default'))
     return self.api.getConfigValue(name)
 
+  def convertValue(self, value, unit):
+    '''
+
+    :param value:
+    :param type:
+    :return:
+    '''
+    #see e.g. https://gpsd.gitlab.io/gpsd/NMEA.html#_xdr_transducer_measurement
+    if unit == "C":
+      value+=273.15
+    if unit == "B":
+      value=value*100
+    return value
+
+
   def run(self):
     """
     the run method
@@ -224,6 +239,7 @@ class Plugin:
       return
     minTime=time.time()-self.storeTime*24*3600
     previousFile=self.computeFileName(-1)
+    currentFile = self.computeFileName()
     try:
       if os.path.exists(previousFile):
         self.api.log("reading previous file %s", previousFile)
@@ -231,7 +247,6 @@ class Plugin:
         reader=HistoryFileReader(previousFile,self.sensorNames)
         self.values.extend(reader.getRecords(minTime))
         reader.close()
-      currentFile=self.computeFileName()
       if os.path.exists(currentFile):
         self.api.log("reading current file %s", currentFile)
         # TODO: minTime
@@ -257,10 +272,10 @@ class Plugin:
       if len(data) > 0:
         for line in data:
           #$--XDR,a,x.x,a,c--c, ..... *hh<CR><LF>
-          line=re.sub("\*.*","",line)
+          line=re.sub("\*.*","",line.rstrip())
           fields=line.split(",")
           lf=len(fields)
-          i=0
+          i=1
           while i < lf:
             if i < (lf-3):
               try:
@@ -270,8 +285,8 @@ class Plugin:
                 tunit=fields[i+2]
                 tname=fields[i+3]
                 if tname in self.sensorNames:
-                  self.api.debug("received %f for %s")
-                  currentValues[tname]=tdata
+                  self.api.debug("received %f for %s",tdata,tname)
+                  currentValues[tname]=self.convertValue(tdata,tunit)
                   hasValues=True
               except Exception as e:
                 self.api.error("NMEA error in %s: %s",line,unicode(e.message))
@@ -295,6 +310,7 @@ class Plugin:
         self.values.append(record)
         hwriter.writeRecord(REC_DATA,record)
         lastWrite=now
+        hasValues=False
 
   def cleanup(self):
     while True:
