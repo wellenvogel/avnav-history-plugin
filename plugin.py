@@ -81,24 +81,26 @@ class HistoryFileReader:
           continue
         try:
           ts=float(fields[1])
-        except:
-          self.api.debug("unable to get time for record %s",line)
-          continue
-        if minTime is not None and ts < minTime:
-          continue
-        if maxTime is not None and ts > maxTime:
-          return rt
-        opline=[None] * (len(self.fields)+1)
-        opline[0]=ts #timestamp
-        hasFields=False
-        for i in range(2,len(fields)):
-          idx=mapping.get(i)
-          if idx is None:
+          if minTime is not None and ts < minTime:
             continue
-          opline[idx+1]=fields[i]
-          hasFields=True
-        if hasFields:
-          rt.append(opline)
+          if maxTime is not None and ts > maxTime:
+            return rt
+          opline=[None] * (len(self.fields)+1)
+          opline[0]=ts #timestamp
+          hasFields=False
+          for i in range(2,len(fields)):
+            idx=mapping.get(i)
+            if idx is None:
+              continue
+            if fields[i] is None or fields[i] == "":
+              continue
+            opline[idx+1]=float(fields[i])
+            hasFields=True
+          if hasFields:
+            rt.append(opline)
+        except:
+          self.api.debug("unable to read record %s",line)
+          continue
     except Exception as e:
       self.api.error("Error reading from file %s: %s",self.filename,unicode(e.message))
     return rt
@@ -176,6 +178,17 @@ class Plugin:
       now+=datetime.timedelta(days=daysDiff)
     return os.path.join(self.baseDir,unicode(now.strftime("%Y-%m-%d")+".avh"))
 
+  def getAllFileNames(self):
+    '''
+    get all needed filenames depending on the storeTime
+    :return:
+    '''
+    days = int(self.storeTime / 24) + 1
+    files = []
+    for d in range(days + 1,-1,-1):
+      files.append(self.computeFileName(-d))
+    return files
+
   def getConfigValue(self,name):
     defaults=self.pluginInfo()['config']
     for cf in defaults:
@@ -238,24 +251,18 @@ class Plugin:
       self.api.setStatus("ERROR", "error getting period: %s" % unicode(e.message))
       return
     minTime=time.time()-self.storeTime*24*3600
-    previousFile=self.computeFileName(-1)
     currentFile = self.computeFileName()
-    try:
-      if os.path.exists(previousFile):
-        self.api.log("reading previous file %s", previousFile)
-        #TODO: minTime
-        reader=HistoryFileReader(previousFile,self.sensorNames)
-        self.values.extend(reader.getRecords(minTime))
-        reader.close()
-      if os.path.exists(currentFile):
-        self.api.log("reading current file %s", currentFile)
-        # TODO: minTime
-        reader = HistoryFileReader(currentFile, self.sensorNames)
-        self.values.extend(reader.getRecords(minTime))
-        reader.close()
-      self.api.log("%d entries in history",len(self.values))
-    except Exception as e:
-      self.api.error("error reading history: %s",unicode(e.message))
+    allFiles=self.getAllFileNames()
+    for historyFile in allFiles:
+      try:
+        if os.path.exists(historyFile):
+          self.api.log("reading file %s", historyFile)
+          reader=HistoryFileReader(historyFile,self.sensorNames)
+          self.values.extend(reader.getRecords(minTime))
+          reader.close()
+      except Exception as e:
+        self.api.error("error reading history: %s",unicode(e.message))
+    self.api.log("%d entries in history", len(self.values))
     cleanupThread=threading.Thread(target=self.cleanup,name="barograph-cleanup")
     cleanupThread.setDaemon(True)
     cleanupThread.start()
@@ -321,10 +328,8 @@ class Plugin:
         self.values.pop(0)
         numRemoved+=1
       self.api.debug("removed %d entries from history",numRemoved)
-      keepDays=int(self.storeTime/24)+1
-      keepFiles=[self.computeFileName(),self.computeFileName(+1)]
-      for d in range(1,keepDays+1):
-        keepFiles.append(self.computeFileName(-d))
+      keepFiles=[self.computeFileName(+1)]
+      keepFiles.extend(self.getAllFileNames())
       currentFiles = glob.glob(os.path.join(self.baseDir, u"*.avh"))
       for file in currentFiles:
         if file in keepFiles:
@@ -366,27 +371,4 @@ class Plugin:
 
     return {'status','unknown request'}
 
-
-if __name__ == '__main__':
-  #testing
-  if len(sys.argv) < 6:
-    print("usage: %s filename interval num start stop",sys.argv[0])
-    sys.exit(1)
-  fn=sys.argv[1]
-  iv=int(sys.argv[2])
-  num=int(sys.argv[3])
-  start=float(sys.argv[4])
-  stop=float(sys.argv[5])
-  incr=(stop-start)/float(num)
-  fields=["test1","test2"]
-  now=time.time()
-  starttime=now-iv*num
-  wr=HistoryFileWriter(fn,fields)
-  for i in range(0,num):
-    wr.writeRecord(REC_DATA,[starttime,start,stop])
-    start+=incr
-    stop-=incr
-    starttime+=iv
-
-  wr.close()
 
