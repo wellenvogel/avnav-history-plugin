@@ -10,6 +10,7 @@ import glob
 
 REC_HDR='H'
 REC_DATA='D'
+NAME="barograph"
 
 class HistoryFileWriter:
   def __init__(self,filename,fields,ts=None):
@@ -110,6 +111,35 @@ class HistoryFileReader:
       return
     self.file.close()
 
+class Average:
+  def __init__(self):
+    self.count=0
+    self.sum=None
+  def add(self,value):
+    if value is None:
+      return
+    try:
+      if self.sum is None:
+        self.sum=float(value)
+        self.count+=1
+      else:
+        self.sum+=float(value)
+        self.count += 1
+      return True
+    except:
+      return False
+  def cur(self):
+    if self.count == 0 or self.sum is None:
+      return self.sum
+    return float(self.sum)/float(self.count)
+  def reset(self):
+    self.count=0
+    self.sum=None
+  def hasData(self):
+    return self.count > 0 and self.sum is not None
+
+
+
 
 class Plugin:
 
@@ -138,15 +168,27 @@ class Plugin:
           'default': None
         },
         {
+          'name': 'storeKeys',
+          'description': 'data to be fetched from the AvNav internal store ,',
+          'default': None
+        },
+        {
           'name': 'period',
           'description': 'period for writing in s',
           'default': '5'
         }
         ,
         {
+          'name': 'pollingInterval',
+          'description': 'polling interval for internal store (seconds), defaults to period/10',
+          'default': None
+        }
+        ,
+
+        {
           'name': 'storeTime',
           'description': 'how long to store the history (h)',
-          'default': '28'
+          'default': '48'
         }
 
         ],
@@ -165,7 +207,10 @@ class Plugin:
     self.api = api # type: AVNApi
     #we register an handler for API requests
     self.api.registerRequestHandler(self.handleApiRequest)
-    self.sensorNames=None
+    self.xdrNames=None
+    self.dataKeys=None
+    self.storeKeys=None
+    self.storePollingPeriod=None
     self.values=[]
     self.baseDir=None
     self.storeTime=None
@@ -227,14 +272,21 @@ class Plugin:
       self.api.setStatus("INACTIVE", "disabled by config")
       return
     sensors=self.getConfigValue('sensorNames')
-    if sensors is None:
-      self.api.setStatus("ERROR", "no parameter sensorNames configured")
+    self.dataKeys=[]
+    if sensors is not None:
+      self.xdrNames=filter(lambda k: k != "",sensors.split(","))
+      self.dataKeys.extend(self.xdrNames)
+    storeKeys=self.getConfigValue('storeKeys')
+    if storeKeys is not None:
+      self.storeKeys=filter(lambda k: k != "",storeKeys.split(","))
+      self.dataKeys.extend(self.storeKeys)
+    if len(self.dataKeys) < 1:
+      self.api.setStatus("ERROR", "no parameter sensorNames or storeKeys configured")
       return
-    self.sensorNames=sensors.split(",")
-    if self.sensorNames[0] == "":
-      self.api.setStatus("ERROR", "empty parameter sensorNames configured")
+    if self.dataKeys[0] == "":
+      self.api.setStatus("ERROR", "empty parameter sensorNames / storeKeys configured")
       return
-    self.baseDir=os.path.join(self.api.getDataDir(),"plugins","barograph")
+    self.baseDir=os.path.join(self.api.getDataDir(),"plugins",NAME)
     if not os.path.exists(self.baseDir):
       os.makedirs(self.baseDir)
     if not os.path.isdir(self.baseDir):
@@ -250,14 +302,29 @@ class Plugin:
     except Exception as e:
       self.api.setStatus("ERROR", "error getting period: %s" % unicode(e.message))
       return
-    minTime=time.time()-self.storeTime*24*3600
+    self.storePollingPeriod=self.getConfigValue('pollingInterval')
+    if self.storePollingPeriod is None:
+      self.storePollingPeriod=self.period/10
+      if self.storePollingPeriod < 1:
+        self.storePollingPeriod=1
+    else:
+      try:
+        self.storePollingPeriod=float(self.storePollingPeriod)
+        if self.storePollingPeriod < 1:
+          self.storePollingPeriod=1
+        if self.storePollingPeriod > self.period/2:
+          self.storePollingPeriod=self.period/2
+      except Exception as e:
+        self.api.setStatus("ERROR","unable to get store period: %s"%unicode(e.message))
+        return
+    minTime=time.time()-self.storeTime*3600
     currentFile = self.computeFileName()
     allFiles=self.getAllFileNames()
     for historyFile in allFiles:
       try:
         if os.path.exists(historyFile):
           self.api.log("reading file %s", historyFile)
-          reader=HistoryFileReader(historyFile,self.sensorNames)
+          reader=HistoryFileReader(historyFile,self.dataKeys)
           self.values.extend(reader.getRecords(minTime))
           reader.close()
       except Exception as e:
@@ -267,62 +334,76 @@ class Plugin:
     cleanupThread.setDaemon(True)
     cleanupThread.start()
     currentValues={}
-    for f in self.sensorNames:
-      currentValues[f]=None
+    for f in self.dataKeys:
+      currentValues[f]=Average()
     lastWrite=0
     hasValues=False
-    hwriter=HistoryFileWriter(currentFile,self.sensorNames)
+    hwriter=HistoryFileWriter(currentFile,self.dataKeys)
     self.api.setStatus("INACTIVE","writing to %s"%currentFile)
     dataReceived=False
+    waitTime=0.3
+    lastStorePoll=0
     while True:
-      seq,data=self.api.fetchFromQueue(seq,10,filter="$XDR")
-      if len(data) > 0:
-        for line in data:
-          #$--XDR,a,x.x,a,c--c, ..... *hh<CR><LF>
-          line=re.sub("\*.*","",line.rstrip())
-          fields=line.split(",")
-          lf=len(fields)
-          i=1
-          while i < lf:
-            if i < (lf-3):
-              try:
-                #we need 4 fields
-                ttype=fields[i]
-                tdata=float(fields[i+1])
-                tunit=fields[i+2]
-                tname=fields[i+3]
-                if tname in self.sensorNames:
-                  self.api.debug("received %f for %s",tdata,tname)
-                  currentValues[tname]=self.convertValue(tdata,tunit)
-                  hasValues=True
-              except Exception as e:
-                self.api.error("NMEA error in %s: %s",line,unicode(e.message))
-            i+=4
-      now=time.time()
-      if hasValues and (now >= (lastWrite+self.period) or now < lastWrite):
-        if not dataReceived:
-          self.api.setStatus("NMEA","writing to %s"%hwriter.filename)
-          dataReceived=True
-        record=[now]
-        for f in self.sensorNames:
-          v=currentValues[f]
-          currentValues[f]=None
-          record.append(v)
-        nextFile=self.computeFileName()
-        if nextFile != hwriter.filename:
-          self.api.log("opening new file %s",nextFile)
-          dataReceived=False
-          hwriter.close()
-          hwriter=HistoryFileWriter(nextFile,self.sensorNames)
-        self.values.append(record)
-        hwriter.writeRecord(REC_DATA,record)
-        lastWrite=now
-        hasValues=False
-
+      try:
+        seq,data=self.api.fetchFromQueue(seq,10,filter="$XDR",waitTime=waitTime)
+        if len(data) > 0:
+          for line in data:
+            #$--XDR,a,x.x,a,c--c, ..... *hh<CR><LF>
+            line=re.sub("\*.*","",line.rstrip())
+            fields=line.split(",")
+            lf=len(fields)
+            i=1
+            while i < lf:
+              if i < (lf-3):
+                try:
+                  #we need 4 fields
+                  if fields[i+1] is not None and fields[i] != "":
+                    ttype=fields[i]
+                    tdata=float(fields[i+1])
+                    tunit=fields[i+2]
+                    tname=fields[i+3]
+                    if tname in self.dataKeys:
+                      self.api.debug("received %f for %s",tdata,tname)
+                      currentValues[tname].add(self.convertValue(tdata,tunit))
+                      hasValues=True
+                except Exception as e:
+                  self.api.error("NMEA error in %s: %s",line,unicode(e.message))
+              i+=4
+        now=time.time()
+        if self.storeKeys is not None and len(self.storeKeys) > 0 and (now >= (lastStorePoll + self.storePollingPeriod) or now < lastStorePoll):
+          for sk in self.storeKeys:
+            try:
+              v=self.api.getSingleValue(sk)
+              if currentValues[sk].add(v):
+                hasValues=True
+            except Exception as e:
+              self.api.debug("unable to fetch %s: %s",sk,unicode(e.message))
+          lastStorePoll=now
+        if hasValues and (now >= (lastWrite+self.period) or now < lastWrite):
+          if not dataReceived:
+            self.api.setStatus("NMEA","writing to %s"%hwriter.filename)
+            dataReceived=True
+          record=[now]
+          for f in self.dataKeys:
+            v=currentValues[f].cur()
+            currentValues[f].reset()
+            record.append(v)
+          nextFile=self.computeFileName()
+          if nextFile != hwriter.filename:
+            self.api.log("opening new file %s",nextFile)
+            dataReceived=False
+            hwriter.close()
+            hwriter=HistoryFileWriter(nextFile,self.dataKeys)
+          self.values.append(record)
+          hwriter.writeRecord(REC_DATA,record)
+          lastWrite=now
+          hasValues=False
+      except Exception as e:
+        self.api.error("error in plugin loop: %s",unicode(e.message))
   def cleanup(self):
     while True:
       self.api.debug("cleanup loop")
-      cleanupTime=time.time()-self.storeTime*24*3600
+      cleanupTime=time.time()-self.storeTime*3600
       numRemoved=0
       while len(self.values) >0 and self.values[0][0] < cleanupTime:
         self.values.pop(0)
@@ -339,6 +420,15 @@ class Plugin:
       time.sleep(60)
 
 
+  def getFilteredValues(self,indices,row):
+    rt=[row[0]]
+    for i in indices:
+      if i>=0 and i < len(row):
+        rt.append(row[i])
+      else:
+        rt.append(None)
+    return rt
+
   def handleApiRequest(self,url,handler,args):
     """
     handler for API requests send from the JS
@@ -352,19 +442,37 @@ class Plugin:
       return {'status': 'OK',
               'numRecords':len(self.values),
               'oldest': self.values[0][0] if len(self.values) else None,
-              'fields': self.sensorNames,
+              'fields': self.dataKeys,
               'period': self.period
               }
     if url == 'history':
       fromTime=args.get('fromTime')
       if fromTime is not None:
-        fromTime=int(fromTime[0])
-      values=self.values
-      if fromTime is not None:
-        values=filter(lambda r: r[0] >= fromTime,self.values)
+        fromTime=float(fromTime[0])
+      toTime=args.get('toTime')
+      if toTime is not None:
+        toTime=float(toTime[0])
+      indices=None
+      keys=args.get('fields')
+      if keys is not None:
+        keys=keys[0].split(",")
+        indices=[]
+        for k in keys:
+          for i in range(0,len(self.dataKeys)):
+            if k == self.dataKeys[i]:
+              indices.append(i+1) #first element is always the time
+      else:
+        keys=self.dataKeys
+      if indices is not None and len(indices) < 1:
+        values=[]
+      else:
+        values=map(lambda r: r if indices is None else self.getFilteredValues(indices,r),
+                 filter(lambda r:
+                      (fromTime is None or r[0] >= fromTime) and (toTime is None or r[0] <= toTime),
+                      self.values))
       return {
         'status':'OK',
-        'fields': self.sensorNames,
+        'fields': keys,
         'period': self.period,
         'data':values
       }
