@@ -443,7 +443,8 @@ class Plugin:
               'numRecords':len(self.values),
               'oldest': self.values[0][0] if len(self.values) else None,
               'fields': self.dataKeys,
-              'period': self.period
+              'period': self.period,
+              'storeTime': self.storeTime
               }
     if url == 'history':
       fromTime=args.get('fromTime')
