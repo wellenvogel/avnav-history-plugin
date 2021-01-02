@@ -17,7 +17,7 @@ console.log("history main loaded");
     }
     function createChart(data){
         data=data.data;
-        let margin = {top: 10, right: 30, bottom: 30, left: 60};
+        let margin = {top: 10, right: 30, bottom: 30, left: 50};
         let chart=document.getElementById('chart');
         let rect=chart.getBoundingClientRect();
         let width=rect.width-margin.left-margin.right;
