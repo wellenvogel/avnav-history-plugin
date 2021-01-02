@@ -34,6 +34,7 @@ text {
     border-bottom: 1px solid grey;
     margin-bottom: 1em;
 }
+
 #hourSelect label {
     display: block;
     padding: 0.3em;
@@ -43,6 +44,14 @@ text {
     display: flex;
     flex-direction: column;
     padding: 0.3em;
+}
+.fieldSelector {
+    margin: 0.3em;
+}
+input.colorSelect {
+    width: 3em;
+    height: 2em;
+    margin: 0.3em;
 }
 button#start {
     width: 6em;
