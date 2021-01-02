@@ -2,7 +2,7 @@
 #
 # check https://nfpm.goreleaser.com/configuration for detailed usage
 #
-name: "avnav-barograph-plugin"
+name: "avnav-history-plugin"
 arch: "all"
 platform: "linux"
 version: "v1.0.0"
@@ -12,9 +12,11 @@ depends:
 - avnav
 maintainer: "Andreas Vogel <andreas@sellenvogel.de>"
 description: |
-  AvNav plugin to display a barograph history
+  AvNav plugin to display a history of internal data or values from xdr records
 homepage: "https://example.com"
 license: "MIT"
 contents:
 - src: ./plugin.*
-  dst: /usr/lib/avnav/plugins/barograph
+  dst: /usr/lib/avnav/plugins/history
+- src: ./lib/*
+  dst: /usr/lib/avnav/plugins/history/lib  

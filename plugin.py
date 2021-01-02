@@ -10,7 +10,7 @@ import glob
 
 REC_HDR='H'
 REC_DATA='D'
-NAME="barograph"
+NAME="history"
 
 class HistoryFileWriter:
   def __init__(self,filename,fields,ts=None):

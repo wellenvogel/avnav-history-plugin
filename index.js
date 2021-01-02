@@ -1,5 +1,6 @@
 console.log("history main loaded");
 (function(){
+    let tooltip;
     let COLORMAP=["#000000", "#FFFF00", "#1CE6FF", "#FF34FF",
         "#FF4A46", "#008941", "#006FA6", "#A30059",
         "#FFDBE5", "#7a4900", "#0000A6", "#63FFAC",
@@ -26,14 +27,70 @@ console.log("history main loaded");
         "#BC23FF", "#99ADC0", "#3A2465", "#922329",
         "#5B4534", "#FDE8DC", "#404E55", "#0089A3",
         "#CB7E98", "#A4E804", "#324E72", "#6A3A4C"];
-    function nextColor(current){
-        let r=parseInt(current.substr(1,2),16);
-        let g=parseInt(current.substr(3,2),16);
-        let b=parseInt(current.substr(5,2),16);
-        r=parseInt(256*Math.random()+r)%256;
-        g=parseInt(256*Math.random()+g)%256;
-        b=parseInt(256*Math.random()+b)%256;
-        return '#'+r.toString(16)+g.toString(16)+b.toString(16);
+
+    function readSettings(){
+        let hours=document.querySelector('input[name="hour"]:checked').value;
+        let fieldCb=document.querySelectorAll('.fieldSelector input[type=checkbox]');
+        let fields=[];
+        for (let i=0;i<fieldCb.length;i++){
+            if (fieldCb[i].checked){
+                let ce=fieldCb[i].parentElement.querySelector('input[type=color]');
+                fields.push(
+                    {
+                        name: fieldCb[i].getAttribute('data-value'),
+                        color: ce ? ce.value : '#000000'
+                    }
+                );
+            }
+        }
+        return {hours:hours,fields:fields};
+    }
+    let SETTINGSNAME='avnav-history-plugin';
+    function storeSettings(){
+        let settings=readSettings();
+        window.localStorage.setItem(SETTINGSNAME,JSON.stringify(settings));
+    }
+
+    function fetchSettings(){
+        let raw=window.localStorage.getItem(SETTINGSNAME);
+        if (! raw) return false;
+        try{
+            let settings=JSON.parse(raw);
+            let he=document.querySelectorAll('input[name="hour"]');
+            let hasMatching=false;
+            for (let i=0;i<he.length;i++){
+                if (he[i].value === settings.hours){
+                    hasMatching=true;
+                    he[i].checked=true;
+                }
+                else{
+                    he[i].checked=false;
+                }
+            }
+            if (! hasMatching){
+                if (he.length > 0) he[0].checked=true;
+            }
+            hasMatching=false;
+            let es=document.querySelectorAll('.fieldSelector');
+            for (let i=0;i<es.length;i++){
+                let cb=es[i].querySelector('input[type=checkbox]');
+                if (! cb) continue;
+                let value=cb.getAttribute('data-value');
+                if (! value) continue;
+                for (let s =0 ; s < settings.fields.length;s++) {
+                    if (settings.fields[s].name === value){
+                        cb.checked=true;
+                        let cs=es[i].querySelector('input[type=color]');
+                        if (cs) cs.value=settings.fields[s].color;
+                        hasMatching=true;
+                        break;
+                    }
+                }
+            }
+            return hasMatching;
+        }catch (e){
+            return false;
+        }
     }
 
     function removeChart(){
@@ -50,6 +107,55 @@ console.log("history main loaded");
             }
         })
         return rt;
+    }
+    function format2(v){
+        v=parseInt(v);
+        return ("0"+v.toFixed(0)).substr(-2);
+    }
+    function formatDate(dt){
+        return dt.getFullYear()+"/"+format2(dt.getMonth()+1)+"/"+format2(dt.getDate())+" "+
+            format2(dt.getHours())+":"+format2(dt.getMinutes());
+    }
+    function addToolTip(d3el,xscale,yscale,name){
+        function showTT(){
+            if (! tooltip) return;
+            return tooltip.style("visibility", "visible");
+        }
+        function fillTT(ev){
+            if (! tooltip) return;
+            tooltip.style("top", (ev.pageY-10)+"px").style("left",(ev.pageX+10)+"px");
+            let xy=d3.pointer(ev);
+            let dt=xscale.invert(xy[0]);
+            let v=yscale.invert(xy[1]);
+            tooltip.html(escape(name)+"<br/>"+formatDate(dt)+"<br/>"+v.toFixed(3));
+        }
+        function hideTT(){
+            if (! tooltip) return;
+            return tooltip.style("visibility", "hidden");
+        }
+        d3el.on("mouseover", function(){
+            showTT();
+        });
+        d3el.on("touchstart", function(){
+            showTT();
+        });
+        d3el.on("mousemove", function(ev){
+            fillTT(ev);
+        });
+        d3el.on("touchmove", function(ev){
+            fillTT(ev);
+        });
+        d3el.on("mouseout", function(){
+            hideTT();
+        });
+        d3el.on("touchend", function(){
+            hideTT();
+        });
+        d3el.on("touchcancel", function(){
+            hideTT();
+        });
+
+
     }
     function createChart(serverData,fields){
         let data=serverData.data;
@@ -97,7 +203,7 @@ console.log("history main loaded");
                     .call(d3.axisLeft(currentY));
                 leftMargin+=50;
             }
-            svg.append("path")
+            let gr=svg.append("path")
                 .datum(data)
                 .attr("fill", "none")
                 .attr("stroke", field.color)
@@ -111,24 +217,15 @@ console.log("history main loaded");
                         return currentY(d[idx+1])
                     })
                 )
+            addToolTip(gr,x,currentY,field.name);
         }
 
     }
     function fillChart(){
-        let hours=document.querySelector('input[name="hour"]:checked').value;
-        let fieldCb=document.querySelectorAll('.fieldSelector input[type=checkbox]');
-        let fields=[];
-        for (let i=0;i<fieldCb.length;i++){
-            if (fieldCb[i].checked){
-                let ce=fieldCb[i].parentElement.querySelector('input[type=color]');
-                fields.push(
-                    {
-                        name: fieldCb[i].getAttribute('data-value'),
-                        color: ce ? ce.value : '#000000'
-                    }
-                );
-            }
-        }
+        let settings=readSettings();
+        storeSettings();
+        let fields=settings.fields;
+        let hours=settings.hours;
         if (fields.length < 1){
             removeChart();
             return;
@@ -202,6 +299,16 @@ console.log("history main loaded");
                         if (colorIndex >= COLORMAP.length) colorIndex=0;
                         selectorList.appendChild(fs);
                     }
+                }
+                tooltip=tooltip = d3.select("body")
+                    .append("div")
+                    .style("position", "absolute")
+                    .style("z-index", "10")
+                    .style("visibility", "hidden")
+                    .text("a simple tooltip");
+                tooltip.node().classList.add('tooltip');
+                if (fetchSettings()){
+                    fillChart();
                 }
             })
             .catch(function(error){alert(error);})
