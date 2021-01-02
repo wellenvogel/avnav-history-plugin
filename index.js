@@ -34,8 +34,8 @@ console.log("history main loaded");
                 .domain(d3.extent(data,function(d){return d[0]*1000}))
                 .range([0,width]);
         let y=d3.scaleLinear()
-                .domain(d3.extent(fData,function(d){return d[1]}))
-                .range([0,height]);
+                .domain([0,d3.max(fData,function(d){return d[1]})]).nice()
+                .range([height,0]);
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(x));
@@ -53,7 +53,8 @@ console.log("history main loaded");
 
 
     }
-    function fillChart(hours){
+    function fillChart(){
+        let hours=document.querySelector('input[name="hour"]:checked').value;
         let fieldCb=document.querySelectorAll('.fieldSelector input[type=checkbox]');
         let fields=[];
         for (let i=0;i<fieldCb.length;i++){
@@ -78,18 +79,28 @@ console.log("history main loaded");
         .catch(function(error){alert(error)});
     }
 
-    function createFieldSelector(idx,name){
+    function createCheckbox(idx,label,value,className){
         let fe=document.createElement('div');
-        fe.classList.add('fieldSelector')
+        fe.classList.add(className)
         let cb=document.createElement('input');
         cb.setAttribute('type','checkbox');
-        cb.setAttribute('data-value',name);
+        cb.setAttribute('data-value',value);
         fe.appendChild(cb);
-        let label=document.createElement('span');
-        label.classList.add('label');
-        label.textContent=name;
-        fe.appendChild(label);
+        let lb=document.createElement('span');
+        lb.classList.add('label');
+        lb.textContent=label;
+        fe.appendChild(lb);
         return fe;
+    }
+    function createRadio(name,label,value,className){
+        let i=document.createElement('input');
+        i.setAttribute('type','radio');
+        i.value=value;
+        i.setAttribute('name',name);
+        let l=document.createElement('label');
+        l.textContent=label;
+        l.appendChild(i);
+        return l;
     }
 
     window.addEventListener('load',function(){
@@ -97,26 +108,31 @@ console.log("history main loaded");
             .then(function(resp){return resp.json()})
             .then(function(data){
                 let hours=data.storeTime;
-                let buttonHours=[Math.ceil(hours),Math.ceil(hours*2/3),Math.ceil(hours/3)];
-                for (let i=0;i<buttonHours.length;i++){
-                    let b=document.getElementById('time'+(i+1))
-                    if (b){
-                        b.textContent=buttonHours[i];
-                        b.setAttribute('data-value',buttonHours[i]);
-                        b.addEventListener('click',function(){
-                            fillChart(buttonHours[i]);
-                        })
-                    }
+                let selectHours=[Math.ceil(hours),Math.ceil(hours*2/3),Math.ceil(hours/3)];
+                let hsParent=document.getElementById('hourSelect');
+                for (let i=0;i<selectHours.length;i++){
+                    let hs=createRadio('hour',selectHours[i]+"h",selectHours[i],"hourSelector");
+                    hsParent.appendChild(hs);
+                }
+                document.querySelector('input[name="hour"]:first-of-type').checked=true;
+                let b=document.getElementById('start')
+                if (b){
+                    b.addEventListener('click',function(){
+                        fillChart();
+                    })
                 }
                 if (data.fields){
                     let selectorList=document.getElementById('selectors');
                     for (let i=0;i<data.fields.length;i++){
-                        let fs=createFieldSelector(i,data.fields[i])
+                        let fs=createCheckbox(i,data.fields[i],data.fields[i],"fieldSelector")
                         selectorList.appendChild(fs);
                     }
                 }
             })
             .catch(function(error){alert(error);})
+        window.addEventListener('resize',function(){
+            window.setTimeout(fillChart,100);
+        })
     });
 })();
 

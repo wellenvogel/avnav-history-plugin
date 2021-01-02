@@ -21,8 +21,18 @@ html, body {
     display: flex;
     flex-direction: row;
 }
+
 #chart {
     flex: 1;
+}
+#selectors {
+    padding-bottom: 1em;
+    border-bottom: 1px solid grey;
+    margin-bottom: 1em;
+}
+#hourSelect label {
+    display: block;
+    padding: 0.3em;
 }
 
 .selector {
@@ -30,4 +40,17 @@ html, body {
     flex-direction: column;
     padding: 0.3em;
 }
+button#start {
+    width: 6em;
+    height: 2em;
+    margin: 0.3em;
+}
 
+@media (max-width: 800px) {
+    .chartFrame{
+        flex-direction: column;
+    }
+    #hourSelect label {
+        display: inline-block;
+    }
+}
