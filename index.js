@@ -44,7 +44,7 @@ console.log("history main loaded");
         fields.forEach(function(field){
             if (field.ownAxis === undefined || field.ownAxis) addLeft+=yaxiswidth;
         })
-        if (addLeft > yaxiswidth) addLeft-=yaxiswidth;
+        if (addLeft >= yaxiswidth) addLeft-=yaxiswidth;
         let x=d3.scaleTime()
                 .domain(d3.extent(data,function(d){return d[0]*1000}))
                 .range([addLeft,width]);

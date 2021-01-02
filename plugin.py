@@ -317,6 +317,7 @@ class Plugin:
       except Exception as e:
         self.api.setStatus("ERROR","unable to get store period: %s"%unicode(e.message))
         return
+    self.api.registerUserApp(self.api.getBaseUrl()+'/index.html','show_chart.svg')
     minTime=time.time()-self.storeTime*3600
     currentFile = self.computeFileName()
     allFiles=self.getAllFileNames()

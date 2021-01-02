@@ -28,6 +28,7 @@ text {
 
 #chart {
     flex: 1;
+    min-height: 15em;
 }
 #selectors {
     padding-bottom: 1em;
