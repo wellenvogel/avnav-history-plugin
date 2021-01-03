@@ -17,10 +17,10 @@ homepage: "https://example.com"
 license: "MIT"
 contents:
 - src: ./plugin.*
-  dst: /usr/lib/avnav/plugins/history
+  dst: /usr/lib/avnav/plugins/history/
 - src: ./index.*
-  dst: /usr/lib/avnav/plugins/history
+  dst: /usr/lib/avnav/plugins/history/
 - src: ./show_chart.svg
-  dst: /usr/lib/avnav/plugins/history
+  dst: /usr/lib/avnav/plugins/history/show_chart.svg
 - src: ./lib/*
   dst: /usr/lib/avnav/plugins/history/lib  
