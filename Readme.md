@@ -12,6 +12,8 @@ the storage interval and the time you would like to keep the data.
 Additionally you can select items from the internal data store in AvNav (see [plugin api, interface C](https://www.wellenvogel.net/software/avnav/docs/hints/plugins.html?lang=en#h2:pluginpy)) 
 that you would like to record. 
 
+License: [MIT](LICENSE.md)
+
 ![ScreenShot](doc/Screenshot.png)
 
 Installation
