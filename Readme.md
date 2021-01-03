@@ -47,6 +47,20 @@ If you installed the package you would need to use
   <system-history sensorNames="Barometer,TempAir" storeKeys="gps.windSpeed" period="30" storeTime="48"/>
 </AVNPluginHandler>
 ```
+
+The following items can be configured:
+
+Name | Default | Description
+-----|---------|----------
+sensorNames | -empty- | comma separated transducer names from [XDR](https://gpsd.gitlab.io/gpsd/NMEA.html#_xdr_transducer_measurement) records you would like to store
+storeKeys | -empty- | keys from the AvNav internal store. You can get a list from the [Layout Editor](https://www.wellenvogel.net/software/avnav/docs/hints/layouts.html?lang=en#h2:LayoutEditor) - just omitting the "nav."
+period | 30 | storage interval in seconds
+storeTime | 48 | time (in hours) to keep the data
+enabled | true | if set to false the plugin is disabled
+pollingInterval | 1/10 of period | if set this is the interval used to poll the internal data for values configured with storeKeys
+
+You must at least configure one sensorName or one storeKey - otherwise the plugin will simply stop.
+
 User App
 --------
 The plugin registers a [User App](https://www.wellenvogel.net/software/avnav/docs/userdoc/addonconfigpage.html?lang=en#h1:ConfigurationofUserApps)
