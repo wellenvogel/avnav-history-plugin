@@ -169,11 +169,11 @@ console.log("history main loaded");
 
     window.addEventListener('load',function(){
         if (! window[NAME] || ! window[NAME].HistoryChart){
-            let el=document.getElementById('chart');
+            let el=document.getElementById('#chart');
             el.textContent("Module not correctly loaded");
             return;
         }
-        HistoryChart=new window[NAME].HistoryChart('chart');
+        HistoryChart=new window[NAME].HistoryChart('#chart');
         this.fetch('api/status')
             .then(function(resp){return resp.json()})
             .then(function(data){

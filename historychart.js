@@ -1,7 +1,7 @@
 console.log("history diagram loaded");
 (function(){
     let NAME="avnav-history-plugin";
-    let HistoryChart=function(elementId) {
+    let HistoryChart=function(element) {
         let self=this;
         this.tooltip = d3.select("body")
             .append("div")
@@ -13,10 +13,18 @@ console.log("history diagram loaded");
         this.tooltip.on("click",function(){
             self.tooltip.style("visibility","hidden");
         })
-        this.element=elementId;
+        this.element=element;
+        this.currentData=[];
+        this.currentFields=[];
+        this.currentYScales=[];
+        this.xScale=undefined;
+    }
+    HistoryChart.prototype.getChartElement=function(){
+        return typeof(this.element) === 'string'? document.querySelector(this.element):this.element;
     }
     HistoryChart.prototype.removeChart=function(){
-        let chart=document.getElementById(this.element);
+        let chart=this.getChartElement();
+        if (! chart) return;
         chart.innerHTML="";
     }
     HistoryChart.prototype.format2=function (v){
@@ -27,40 +35,81 @@ console.log("history diagram loaded");
         return dt.getFullYear()+"/"+this.format2(dt.getMonth()+1)+"/"+this.format2(dt.getDate())+" "+
             this.format2(dt.getHours())+":"+this.format2(dt.getMinutes());
     }
-    HistoryChart.prototype.addToolTip=function(d3el,xscale,yscale,name){
+    HistoryChart.prototype.addToolTip=function(d3el,leftMargin,topMargin){
         let timer=undefined;
         let ttime=8000;
         let self=this;
+        let pixTolerance=25;
         function fillTT(ev){
             if (! self.tooltip) return;
-            self.tooltip.style("top", (ev.pageY-10)+"px").style("left",(ev.pageX+10)+"px");
             let xy=d3.pointer(ev);
-            let dt=xscale.invert(xy[0]);
-            let v=yscale.invert(xy[1]);
-            self.tooltip.html(escape(name)+"<br/>"+self.formatDate(dt)+"<br/>"+v.toFixed(3));
+            let dt=self.xScale.invert(xy[0]-leftMargin);
+            //find the index in the current values
+            let bisectD=d3.bisector(function(row,x){return (row[0]*1000) - x }).center;
+            let idx=bisectD(self.currentData,dt.getTime());
+            let directions=[+1,-1];
+            let minDistance;
+            let currentTarget;
+            let tv;
+            directions.forEach(function(dir) {
+                let currentIdx=idx;
+                let dx=0;
+                while (dx < pixTolerance) {
+                    if (currentIdx < 0 || currentIdx >= self.currentData.length) break;
+                    tv=self.currentData[currentIdx][0]*1000;
+                    dx=Math.abs(leftMargin+self.xScale(tv)-xy[0]);
+                    if (dx >= pixTolerance) break;
+                    //now look around in the current Values
+                    for (let i=0;i<self.currentFields.length;i++){
+                        let v=self.currentData[currentIdx][i];
+                        if (isNaN(v) || v === null) continue;
+                        let fmt=self.getFormatterFunction(self.currentFields[i],i);
+                        v=fmt(self.currentData[currentIdx]);
+                        let px=self.currentYScales[i](v)+topMargin;
+                        let dy=Math.abs(px-xy[1]);
+                        if (dy > pixTolerance) continue;
+                        let dst=(dx*dx + dy*dy);
+                        if (minDistance === undefined || dst < minDistance){
+                            minDistance=dst;
+                            currentTarget={x:currentIdx,f:i,v:v,tv:tv};
+                        }
+                    }
+                    currentIdx+=dir;
+                }
+            });
+            if (! currentTarget) return;
+            self.tooltip.style("top", (ev.pageY-10)+"px").style("left",(ev.pageX+10)+"px");
+            self.tooltip.html(escape(self.currentFields[currentTarget.f].name)+"<br/>"
+                +self.formatDate(new Date(currentTarget.tv))+"<br/>"
+                +currentTarget.v.toFixed(3)
+            );
+            return true;
         }
         function showTT(ev){
             if (! self.tooltip) return;
-            self.tooltip.style("visibility", "visible");
-            return fillTT(ev);
+            if (fillTT(ev))self.tooltip.style("visibility", "visible");
         }
         function hideTT(){
             if (! self.tooltip) return;
             return self.tooltip.style("visibility", "hidden");
         }
+        /*
         d3el.on("pointerenter", function(ev){
             showTT(ev);
             window.clearTimeout(timer);
             timer=window.setTimeout(hideTT,ttime);
         });
+        */
         d3el.on("pointermove", function(ev){
+            ev.preventDefault();
             fillTT(ev);
             window.clearTimeout(timer);
             timer=window.setTimeout(hideTT,ttime);
         });
         d3el.on("pointerdown", function(ev){
             showTT(ev);
-            timer=window.setTimeout(hideTT,5000);
+            window.clearTimeout(timer);
+            timer=window.setTimeout(hideTT,ttime);
         });
     }
     HistoryChart.prototype.getFormatterFunction = function (field, index) {
@@ -98,14 +147,18 @@ console.log("history diagram loaded");
     HistoryChart.prototype.createChart=function(serverData,fields){
         let self=this;
         let data=serverData.data;
+        this.currentData=data;
+        this.currentFields=fields;
+        this.currentYScales=[];
         //we rely on the server having the same order of fields as we have...
         let yaxiswidth=50;
         let margin = {top: 10, right: 30, bottom: 30, left: yaxiswidth};
-        let chart=document.getElementById(this.element);
+        let chart=this.getChartElement();
+        if (! chart) return;
         let rect=chart.getBoundingClientRect();
         let width=rect.width-margin.left-margin.right;
         let height=rect.height-margin.top-margin.bottom;
-        let svg = d3.select("#"+this.element)
+        let svg = d3.select(this.element)
                  .append("svg")
                     .attr("width",rect.width)
                     .attr("height",rect.height)
@@ -117,12 +170,12 @@ console.log("history diagram loaded");
             if (field.ownAxis === undefined || field.ownAxis) addLeft+=yaxiswidth;
         })
         if (addLeft >= yaxiswidth) addLeft-=yaxiswidth;
-        let x=d3.scaleTime()
+        this.xScale=d3.scaleTime()
                 .domain(d3.extent(data,function(d){return d[0]*1000}))
-                .range([addLeft,width]);
+                .range([addLeft,width-addLeft]);
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
-            .call(d3.axisBottom(x)
+            .call(d3.axisBottom(this.xScale)
                 .tickFormat(d3.timeFormat("%d/%Hh"))
             );
         let currentY;
@@ -146,11 +199,10 @@ console.log("history diagram loaded");
                         .attr('text-anchor', 'end')
                         .attr('x', leftMargin-10)
                         .attr('y', margin.top+20)
-                        //.attr('stroke',field.color)
                         .attr('fill',field.color)
                         .text(unit)
                 }
-                leftMargin+=50;
+                leftMargin+=yaxiswidth;
             }
             let gr=svg.append("path")
                 .datum(data)
@@ -160,14 +212,15 @@ console.log("history diagram loaded");
                 .attr("d", d3.line()
                     .defined(function(d){return !isNaN(d[idx+1]) && d[idx+1] !== null})
                     .x(function (d) {
-                        return x(d[0] * 1000)
+                        return self.xScale(d[0] * 1000)
                     })
                     .y(function (d) {
                         return currentY(vf(d))
                     })
                 )
-            self.addToolTip(gr,x,currentY,field.name);
+            this.currentYScales.push(currentY);
         }
+        self.addToolTip(d3.select(chart),margin.left,margin.top);
 
     }
     if (! window[NAME]) window[NAME]={};
