@@ -6,7 +6,7 @@ pdir=`readlink -f "$pdir"`
 config=package.yaml
 version="$1"
 if [ "$version" = "" ] ; then
-  version=`date '+%Y.%m.%d'`
+  version=`date '+%Y.%-m.%-d'`
 fi
 echo building version $version
 tmpf=package$$.yaml
