@@ -117,10 +117,8 @@ console.log("history main loaded");
             format2(dt.getHours())+":"+format2(dt.getMinutes());
     }
     function addToolTip(d3el,xscale,yscale,name){
-        function showTT(){
-            if (! tooltip) return;
-            return tooltip.style("visibility", "visible");
-        }
+        let timer=undefined;
+        let ttime=8000;
         function fillTT(ev){
             if (! tooltip) return;
             tooltip.style("top", (ev.pageY-10)+"px").style("left",(ev.pageX+10)+"px");
@@ -129,30 +127,28 @@ console.log("history main loaded");
             let v=yscale.invert(xy[1]);
             tooltip.html(escape(name)+"<br/>"+formatDate(dt)+"<br/>"+v.toFixed(3));
         }
+        function showTT(ev){
+            if (! tooltip) return;
+            tooltip.style("visibility", "visible");
+            return fillTT(ev);
+        }
         function hideTT(){
             if (! tooltip) return;
             return tooltip.style("visibility", "hidden");
         }
-        d3el.on("mouseover", function(){
-            showTT();
+        d3el.on("pointerenter", function(ev){
+            showTT(ev);
+            window.clearTimeout(timer);
+            timer=window.setTimeout(hideTT,ttime);
         });
-        d3el.on("touchstart", function(){
-            showTT();
-        });
-        d3el.on("mousemove", function(ev){
+        d3el.on("pointermove", function(ev){
             fillTT(ev);
+            window.clearTimeout(timer);
+            timer=window.setTimeout(hideTT,ttime);
         });
-        d3el.on("touchmove", function(ev){
-            fillTT(ev);
-        });
-        d3el.on("mouseout", function(){
-            hideTT();
-        });
-        d3el.on("touchend", function(){
-            hideTT();
-        });
-        d3el.on("touchcancel", function(){
-            hideTT();
+        d3el.on("pointerdown", function(ev){
+            showTT(ev);
+            timer=window.setTimeout(hideTT,5000);
         });
 
 
@@ -307,6 +303,9 @@ console.log("history main loaded");
                     .style("visibility", "hidden")
                     .text("a simple tooltip");
                 tooltip.node().classList.add('tooltip');
+                tooltip.on("click",function(){
+                    tooltip.style("visibility","hidden");
+                })
                 if (fetchSettings()){
                     fillChart();
                 }
