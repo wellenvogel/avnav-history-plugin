@@ -252,7 +252,7 @@ class Plugin:
     if unit == "C":
       value+=273.15
     if unit == "B":
-      value=value*100
+      value=value*100*1000
     return value
 
 
@@ -317,7 +317,7 @@ class Plugin:
       except Exception as e:
         self.api.setStatus("ERROR","unable to get store period: %s"%unicode(e.message))
         return
-    self.api.registerUserApp(self.api.getBaseUrl()+'/index.html','show_chart.svg')
+    self.api.registerUserApp(self.api.getBaseUrl()+'/index.html','show_chart.svg','History')
     minTime=time.time()-self.storeTime*3600
     currentFile = self.computeFileName()
     allFiles=self.getAllFileNames()
