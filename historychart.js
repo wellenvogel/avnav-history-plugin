@@ -63,6 +63,38 @@ console.log("history diagram loaded");
             timer=window.setTimeout(hideTT,5000);
         });
     }
+    HistoryChart.prototype.getFormatterFunction = function (field, index) {
+        let defaultF=function (row) {
+            return row[index + 1]
+        };
+        if (!field.formatter) {
+            return defaultF;
+        }
+        let formatter = field.formatter;
+        if (typeof(formatter) === "string"){
+            formatter=window[NAME].HistoryFormatter[formatter];
+            if (! formatter) return defaultF;
+        }
+        if (typeof (formatter) === "function") {
+            return function (row) {
+                return formatter(row[index + 1])
+            }
+        } else {
+            return function (row) {
+                return formatter.f(row[index + 1])
+            }
+        }
+    }
+    HistoryChart.prototype.getYtitle=function(field){
+        if (! field.formatter) return;
+        let formatter=field.formatter;
+        if (typeof("formatter") === 'string'){
+            formatter=window[NAME].HistoryFormatter[formatter];
+            if (! formatter) return;
+        }
+        if (typeof(formatter) !== 'object') return;
+        return formatter.unit;
+    }
     HistoryChart.prototype.createChart=function(serverData,fields){
         let self=this;
         let data=serverData.data;
@@ -98,16 +130,26 @@ console.log("history diagram loaded");
         for (let idx=0;idx<fields.length;idx++) {
             //new y axis?
             let field=fields[idx];
+            let vf=self.getFormatterFunction(field,idx);
             if (currentY === undefined || (field.ownAxis === undefined || field.ownAxis)) {
+                let ext=d3.extent(data,vf);
                 currentY = d3.scaleLinear()
-                    .domain([0, d3.max(data, function (d) {
-                        return d[idx+1]
-                    })]).nice()
+                    .domain([ext[0] >= 0?0:ext[0],ext [1]]).nice()
                     .range([height, 0]);
                 svg.append("g")
                     .attr("transform","translate("+leftMargin+",0)")
                     .attr("stroke", field.color)
                     .call(d3.axisLeft(currentY));
+                let unit=self.getYtitle(field);
+                if (unit) {
+                    svg.append('text')
+                        .attr('text-anchor', 'end')
+                        .attr('x', leftMargin-10)
+                        .attr('y', margin.top+20)
+                        //.attr('stroke',field.color)
+                        .attr('fill',field.color)
+                        .text(unit)
+                }
                 leftMargin+=50;
             }
             let gr=svg.append("path")
@@ -121,7 +163,7 @@ console.log("history diagram loaded");
                         return x(d[0] * 1000)
                     })
                     .y(function (d) {
-                        return currentY(d[idx+1])
+                        return currentY(vf(d))
                     })
                 )
             self.addToolTip(gr,x,currentY,field.name);
@@ -130,6 +172,25 @@ console.log("history diagram loaded");
     }
     if (! window[NAME]) window[NAME]={};
     window[NAME].HistoryChart=HistoryChart;
+    if (! window[NAME].HistoryFormatter) window[NAME].HistoryFormatter={};
+    try{
+        //try to read some formatters that potentially have been set in the user.js
+        let parentWindow=window.parent;
+        if (parentWindow && parentWindow[NAME]){
+            let parentFormatters=parentWindow[NAME].HistoryFormatter;
+            if (parentFormatters){
+                for (let p in parentFormatters){
+                    window[NAME].HistoryFormatter[p]=parentFormatters[p];
+                }
+            }
+        }
+    }catch (e){
+        console.log("unable to read parent");
+    }
+    window[NAME].HistoryFormatter.hectoPascal={unit:'hPa',f:function(v){return v/100}};
+    window[NAME].HistoryFormatter.celsius={unit:'°',f:function(v){return v-273.15}};
+    window[NAME].HistoryFormatter.knots={unit:'kn',f:function(v){return v*3600.0/1852.0}};
+    window[NAME].HistoryFormatter.default=function(v){return v};
 })();
 
 

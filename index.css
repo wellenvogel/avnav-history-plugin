@@ -54,11 +54,16 @@ text {
 }
 .fieldSelector {
     margin: 0.3em;
+    display: flex;
+    align-items: center;
 }
 input.colorSelect {
     width: 3em;
     height: 2em;
     margin: 0.3em;
+}
+select.formatterSelect {
+    height: 2em;
 }
 button#start {
     width: 6em;

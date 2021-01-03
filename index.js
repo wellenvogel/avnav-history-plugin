@@ -33,16 +33,21 @@ console.log("history main loaded");
         let hours=document.querySelector('input[name="hour"]:checked').value;
         let fieldCb=document.querySelectorAll('.fieldSelector input[type=checkbox]');
         let fields=[];
-        for (let i=0;i<fieldCb.length;i++){
-            if (fieldCb[i].checked){
-                let ce=fieldCb[i].parentElement.querySelector('input[type=color]');
-                fields.push(
-                    {
-                        name: fieldCb[i].getAttribute('data-value'),
-                        color: ce ? ce.value : '#000000'
-                    }
-                );
+        for (let i = 0; i < fieldCb.length; i++) {
+            let ce = fieldCb[i].parentElement.querySelector('input[type=color]');
+            let fs = fieldCb[i].parentElement.querySelector('select');
+            let formatter = 'default';
+            if (fs) {
+                formatter = fs.options[fs.selectedIndex].value;
             }
+            fields.push(
+                {
+                    name: fieldCb[i].getAttribute('data-value'),
+                    color: ce ? ce.value : '#000000',
+                    formatter: formatter,
+                    selected: !!fieldCb[i].checked
+                }
+            );
         }
         return {hours:hours,fields:fields};
     }
@@ -80,9 +85,12 @@ console.log("history main loaded");
                 if (! value) continue;
                 for (let s =0 ; s < settings.fields.length;s++) {
                     if (settings.fields[s].name === value){
-                        cb.checked=true;
+                        let field=settings.fields[s];
+                        cb.checked=field.selected || field.selected === undefined;
                         let cs=es[i].querySelector('input[type=color]');
-                        if (cs) cs.value=settings.fields[s].color;
+                        if (cs) cs.value=field.color;
+                        let fs=es[i].querySelector('select');
+                        if (fs) fs.value=field.formatter||'default';
                         hasMatching=true;
                         break;
                     }
@@ -97,7 +105,10 @@ console.log("history main loaded");
     function fillChart(){
         let settings=readSettings();
         storeSettings();
-        let fields=settings.fields;
+        let fields=[];
+        settings.fields.forEach(function(f){
+            if (f.selected || f.selected === undefined) fields.push(f);
+        });
         let hours=settings.hours;
         if (fields.length < 1){
             HistoryChart.removeChart();
@@ -123,6 +134,17 @@ console.log("history main loaded");
         cb.setAttribute('type','color');
         cb.setAttribute('value',color);
         cb.classList.add('colorSelect');
+        fe.appendChild(cb);
+        cb=document.createElement('select');
+        cb.classList.add("formatterSelect");
+        cb.value='default';
+        for (let fn in window[NAME].HistoryFormatter){
+            let o=document.createElement('option');
+            o.setAttribute('value',fn);
+            o.textContent=fn;
+            //if (fn === 'default') o.setAttribute('selected','selected');
+            cb.appendChild(o);
+        }
         fe.appendChild(cb);
         cb=document.createElement('input');
         cb.setAttribute('type','checkbox');
