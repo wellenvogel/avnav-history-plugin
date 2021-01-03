@@ -21,8 +21,8 @@ if __name__ == '__main__':
     err("usage: %s %s ..."%(sys.argv[0],modes))
   mode=sys.argv[1]
   if mode == 'create':
-    if len(sys.argv) < 7:
-      print("usage: %s create yyyy-mm-dd fields interval start stop"%sys.argv[0])
+    if len(sys.argv) < 5:
+      print("usage: %s create yyyy-mm-dd fields (fieldname:start:stop) interval"%sys.argv[0])
       sys.exit(1)
     fn=sys.argv[2]+".avh"
     parts=sys.argv[2].split("-")
@@ -30,22 +30,28 @@ if __name__ == '__main__':
       err("you must provide yyyy-mm-dd for the date")
     dt=datetime.datetime(year=int(parts[0]),month=int(parts[1]),day=int(parts[2]))
     ts=dtToTs(dt)
+    iv = int(sys.argv[4])
+    num = 24 * 3600 / iv
     fields=sys.argv[3].split(",")
-    iv=int(sys.argv[4])
-    num=24*3600/iv
-    start=float(sys.argv[5])
-    stop=float(sys.argv[6])
-    rnd=(stop-start)/30.0
-    incr=(stop-start)/float(num)
+    fieldNames=[]
+    fieldConfig={}
+    for f in fields:
+      (name,start,stop)=f.split(":")
+      fieldNames.append(name)
+      start=float(start)
+      stop=float(stop)
+      incr = (stop - start) / float(num)
+      fieldConfig[name]={'start':start,'stop':stop,'incr':incr,'rnd':(stop-start)/30.0}
     starttime=ts
-    wr=HistoryFileWriter(fn,fields)
+    wr=HistoryFileWriter(fn,fieldNames)
     for i in range(0,num):
       record=[starttime]
-      for f in fields:
-        v=(-0.5 + random.random())*rnd+start
+      for f in fieldNames:
+        cfg=fieldConfig[f]
+        v=(-0.5 + random.random())*cfg['rnd']+cfg['start']
+        cfg['start']=cfg['start']+cfg['incr']
         record.append(v)
       wr.writeRecord(REC_DATA,record)
-      start+=incr
       starttime+=iv
 
     wr.close()

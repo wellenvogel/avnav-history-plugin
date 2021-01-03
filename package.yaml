@@ -10,13 +10,17 @@ section: "default"
 priority: "extra"
 depends:
 - avnav
-maintainer: "Andreas Vogel <andreas@sellenvogel.de>"
+maintainer: "Andreas Vogel <andreas@wellenvogel.de>"
 description: |
   AvNav plugin to display a history of internal data or values from xdr records
 homepage: "https://example.com"
 license: "MIT"
 contents:
 - src: ./plugin.*
+  dst: /usr/lib/avnav/plugins/history
+- src: ./index.*
+  dst: /usr/lib/avnav/plugins/history
+- src: ./show_chart.svg
   dst: /usr/lib/avnav/plugins/history
 - src: ./lib/*
   dst: /usr/lib/avnav/plugins/history/lib  
