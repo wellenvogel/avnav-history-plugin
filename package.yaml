@@ -20,6 +20,8 @@ contents:
   dst: /usr/lib/avnav/plugins/history/
 - src: ./index.*
   dst: /usr/lib/avnav/plugins/history/
+- src: ./historychart.*
+  dst: /usr/lib/avnav/plugins/history/
 - src: ./icons/*
   dst: /usr/lib/avnav/plugins/history/icons
 - src: ./lib/*
