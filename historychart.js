@@ -1,18 +1,20 @@
 console.log("history diagram loaded");
 (function(){
-    let NAME="avnav-history-plugin";
-    let HistoryChart=function(element) {
+    let NAME="avnavHistoryPlugin";
+    let HistoryChart=function(element,opt_options) {
         let self=this;
-        this.tooltip = d3.select("body")
-            .append("div")
-            .style("position", "absolute")
-            .style("z-index", "10")
-            .style("visibility", "hidden")
-            .text("a simple tooltip");
-        this.tooltip.node().classList.add('tooltip');
-        this.tooltip.on("click",function(){
-            self.tooltip.style("visibility","hidden");
-        })
+        if (! opt_options || (opt_options.tooltip || opt_options.tooltip === undefined)){
+            this.tooltip = d3.select("body")
+                .append("div")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("visibility", "hidden")
+                .text("a simple tooltip");
+            this.tooltip.node().classList.add('tooltip');
+            this.tooltip.on("click", function () {
+                self.tooltip.style("visibility", "hidden");
+            })
+        }
         this.element=element;
         this.currentData=[];
         this.currentFields=[];
@@ -61,7 +63,7 @@ console.log("history diagram loaded");
                     if (dx >= pixTolerance) break;
                     //now look around in the current Values
                     for (let i=0;i<self.currentFields.length;i++){
-                        let v=self.currentData[currentIdx][i];
+                        let v=self.currentData[currentIdx][i+1];
                         if (isNaN(v) || v === null) continue;
                         let fmt=self.getFormatterFunction(self.currentFields[i],i);
                         v=fmt(self.currentData[currentIdx]);
@@ -93,20 +95,20 @@ console.log("history diagram loaded");
             if (! self.tooltip) return;
             return self.tooltip.style("visibility", "hidden");
         }
-        /*
-        d3el.on("pointerenter", function(ev){
+        d3el.on("pointerover", function(ev){
+            ev.preventDefault();
             showTT(ev);
             window.clearTimeout(timer);
             timer=window.setTimeout(hideTT,ttime);
         });
-        */
         d3el.on("pointermove", function(ev){
             ev.preventDefault();
-            fillTT(ev);
+            showTT(ev);
             window.clearTimeout(timer);
             timer=window.setTimeout(hideTT,ttime);
         });
         d3el.on("pointerdown", function(ev){
+            ev.preventDefault();
             showTT(ev);
             window.clearTimeout(timer);
             timer=window.setTimeout(hideTT,ttime);
@@ -172,7 +174,7 @@ console.log("history diagram loaded");
         if (addLeft >= yaxiswidth) addLeft-=yaxiswidth;
         this.xScale=d3.scaleTime()
                 .domain(d3.extent(data,function(d){return d[0]*1000}))
-                .range([addLeft,width-addLeft]);
+                .range([addLeft,width]);
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(this.xScale)

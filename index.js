@@ -1,6 +1,6 @@
 console.log("history main loaded");
 (function(){
-    let NAME="avnav-history-plugin";
+    let NAME="avnavHistoryPlugin";
     let HistoryChart;
     let COLORMAP=["#000000", "#FFFF00", "#1CE6FF", "#FF34FF",
         "#FF4A46", "#008941", "#006FA6", "#A30059",
@@ -133,11 +133,13 @@ console.log("history main loaded");
         let cb=document.createElement('input');
         cb.setAttribute('type','color');
         cb.setAttribute('value',color);
+        cb.addEventListener('change',storeSettings)
         cb.classList.add('colorSelect');
         fe.appendChild(cb);
         cb=document.createElement('select');
         cb.classList.add("formatterSelect");
         cb.value='default';
+        cb.addEventListener('change',storeSettings)
         for (let fn in window[NAME].HistoryFormatter){
             let o=document.createElement('option');
             o.setAttribute('value',fn);
@@ -149,6 +151,7 @@ console.log("history main loaded");
         cb=document.createElement('input');
         cb.setAttribute('type','checkbox');
         cb.setAttribute('data-value',value);
+        cb.addEventListener('change',storeSettings)
         fe.appendChild(cb);
         let lb=document.createElement('span');
         lb.classList.add('label');
@@ -189,6 +192,12 @@ console.log("history main loaded");
                 if (b){
                     b.addEventListener('click',function(){
                         fillChart();
+                    })
+                }
+                b=document.getElementById('reload')
+                if (b){
+                    b.addEventListener('click',function(){
+                        window.location.href=window.location.href;
                     })
                 }
                 let colorIndex=4;
