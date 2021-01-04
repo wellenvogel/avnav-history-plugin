@@ -42,9 +42,10 @@ text {
     margin-bottom: 1em;
 }
 
-#hourSelect label {
+.startSelect label {
     display: block;
     padding: 0.3em;
+    width: 4em;
 }
 
 .selector {
@@ -64,6 +65,10 @@ input.colorSelect {
 }
 select.formatterSelect {
     height: 2em;
+}
+#hourSelect {
+    border-bottom: 1px solid grey;
+    margin-bottom: 0.5em;
 }
 button {
     width: 6em;
@@ -90,7 +95,7 @@ button#reload{
     .chartFrame{
         flex-direction: column;
     }
-    #hourSelect label {
+    .startSelect label {
         display: inline-block;
     }
 }

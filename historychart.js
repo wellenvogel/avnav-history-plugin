@@ -146,7 +146,7 @@ console.log("history diagram loaded");
         if (typeof(formatter) !== 'object') return;
         return formatter.unit;
     }
-    HistoryChart.prototype.createChart=function(serverData,fields){
+    HistoryChart.prototype.createChart=function(serverData,fields,opt_showLines){
         let self=this;
         let data=serverData.data;
         this.currentData=data;
@@ -184,43 +184,67 @@ console.log("history diagram loaded");
         let leftMargin=0;
         for (let idx=0;idx<fields.length;idx++) {
             //new y axis?
-            let field=fields[idx];
-            let vf=self.getFormatterFunction(field,idx);
+            let field = fields[idx];
+            let vf = self.getFormatterFunction(field, idx);
             if (currentY === undefined || (field.ownAxis === undefined || field.ownAxis)) {
-                let ext=d3.extent(data,vf);
+                let ext = d3.extent(data, vf);
                 currentY = d3.scaleLinear()
-                    .domain([ext[0] >= 0?0:ext[0],ext [1]]).nice()
+                    .domain([ext[0] >= 0 ? 0 : ext[0], ext [1]]).nice()
                     .range([height, 0]);
                 svg.append("g")
-                    .attr("transform","translate("+leftMargin+",0)")
+                    .attr("transform", "translate(" + leftMargin + ",0)")
                     .attr("stroke", field.color)
                     .call(d3.axisLeft(currentY));
-                let unit=self.getYtitle(field);
+                let unit = self.getYtitle(field);
                 if (unit) {
                     svg.append('text')
                         .attr('text-anchor', 'end')
-                        .attr('x', leftMargin-10)
-                        .attr('y', margin.top+20)
-                        .attr('fill',field.color)
+                        .attr('x', leftMargin - 10)
+                        .attr('y', margin.top + 20)
+                        .attr('fill', field.color)
                         .text(unit)
                 }
-                leftMargin+=yaxiswidth;
+                leftMargin += yaxiswidth;
             }
-            let gr=svg.append("path")
-                .datum(data)
-                .attr("fill", "none")
-                .attr("stroke", field.color)
-                .attr("stroke-width", 1.5)
-                .attr("d", d3.line()
-                    .defined(function(d){return !isNaN(d[idx+1]) && d[idx+1] !== null})
-                    .x(function (d) {
+            let gr;
+            if (opt_showLines) {
+                gr = svg.append("path")
+                    .datum(data)
+                    .attr("fill", "none")
+                    .attr("stroke", field.color)
+                    .attr("stroke-width", 1.5)
+                    .attr("d", d3.line()
+                        .defined(function (d) {
+                            return !isNaN(d[idx + 1]) && d[idx + 1] !== null
+                        })
+                        .x(function (d) {
+                            return self.xScale(d[0] * 1000)
+                        })
+                        .y(function (d) {
+                            return currentY(vf(d))
+                        })
+                    )
+            } else {
+                gr = svg.append("g")
+                    .selectAll('dot')
+                    .data(data)
+                    .enter()
+                    .append('circle')
+                    .attr("fill", "none")
+                    .attr("fill", field.color)
+                    .attr("r", 1)
+                    .attr("visibility",
+                        function (d) {
+                            return (!isNaN(d[idx + 1]) && d[idx + 1] !== null) ? undefined : "hidden"
+                        })
+                    .attr("cx", function (d) {
                         return self.xScale(d[0] * 1000)
                     })
-                    .y(function (d) {
+                    .attr("cy", function (d) {
                         return currentY(vf(d))
-                    })
-                )
-            this.currentYScales.push(currentY);
+                    });
+                this.currentYScales.push(currentY);
+            }
         }
         self.addToolTip(d3.select(chart),margin.left,margin.top);
 

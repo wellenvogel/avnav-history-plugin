@@ -31,6 +31,7 @@ console.log("history main loaded");
 
     function readSettings(){
         let hours=document.querySelector('input[name="hour"]:checked').value;
+        let dtype=document.querySelector('input[name="dtype"]:checked').value;
         let fieldCb=document.querySelectorAll('.fieldSelector input[type=checkbox]');
         let fields=[];
         for (let i = 0; i < fieldCb.length; i++) {
@@ -49,33 +50,36 @@ console.log("history main loaded");
                 }
             );
         }
-        return {hours:hours,fields:fields};
+        return {hours:hours,fields:fields,type:dtype};
     }
     let SETTINGSNAME='avnav-history-plugin';
     function storeSettings(){
         let settings=readSettings();
         window.localStorage.setItem(SETTINGSNAME,JSON.stringify(settings));
     }
-
+    function setRadio(name,value){
+        let he=document.querySelectorAll('input[name="'+name+'"]');
+        let hasMatching=false;
+        for (let i=0;i<he.length;i++){
+            if (he[i].value === value){
+                hasMatching=true;
+                he[i].checked=true;
+            }
+            else{
+                he[i].checked=false;
+            }
+        }
+        if (! hasMatching){
+            if (he.length > 0) he[0].checked=true;
+        }
+    }
     function fetchSettings(){
         let raw=window.localStorage.getItem(SETTINGSNAME);
         if (! raw) return false;
         try{
             let settings=JSON.parse(raw);
-            let he=document.querySelectorAll('input[name="hour"]');
-            let hasMatching=false;
-            for (let i=0;i<he.length;i++){
-                if (he[i].value === settings.hours){
-                    hasMatching=true;
-                    he[i].checked=true;
-                }
-                else{
-                    he[i].checked=false;
-                }
-            }
-            if (! hasMatching){
-                if (he.length > 0) he[0].checked=true;
-            }
+            setRadio('hours',settings.hours);
+            setRadio('dtype',settings.type);
             hasMatching=false;
             let es=document.querySelectorAll('.fieldSelector');
             for (let i=0;i<es.length;i++){
@@ -122,7 +126,7 @@ console.log("history main loaded");
         .then(function(resp){return resp.json()})
         .then(function(data){
             HistoryChart.removeChart();
-            HistoryChart.createChart(data,fields);
+            HistoryChart.createChart(data,fields,settings.type === 'line');
         })
         .catch(function(error){alert(error)});
     }
@@ -187,7 +191,14 @@ console.log("history main loaded");
                     let hs=createRadio('hour',selectHours[i]+"h",selectHours[i],"hourSelector");
                     hsParent.appendChild(hs);
                 }
+                let typeParent=document.getElementById('typeSelect');
+                let types=['dot','line'];
+                for (let i=0;i<types.length;i++){
+                    let hs=createRadio('dtype',types[i],types[i],"typeSelector");
+                    typeParent.appendChild(hs);
+                }
                 document.querySelector('input[name="hour"]:first-of-type').checked=true;
+                document.querySelector('input[name="dtype"]:first-of-type').checked=true;
                 let b=document.getElementById('start')
                 if (b){
                     b.addEventListener('click',function(){
