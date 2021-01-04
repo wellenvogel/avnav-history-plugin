@@ -2,19 +2,7 @@ console.log("history diagram loaded");
 (function(){
     let NAME="avnavHistoryPlugin";
     let HistoryChart=function(element,opt_options) {
-        let self=this;
-        if (! opt_options || (opt_options.tooltip || opt_options.tooltip === undefined)){
-            this.tooltip = d3.select("body")
-                .append("div")
-                .style("position", "absolute")
-                .style("z-index", "10")
-                .style("visibility", "hidden")
-                .text("a simple tooltip");
-            this.tooltip.node().classList.add('tooltip');
-            this.tooltip.on("click", function () {
-                self.tooltip.style("visibility", "hidden");
-            })
-        }
+        this.useToolTip=! opt_options || (opt_options.tooltip || opt_options.tooltip === undefined);
         this.element=element;
         this.currentData=[];
         this.currentFields=[];
@@ -26,8 +14,11 @@ console.log("history diagram loaded");
     }
     HistoryChart.prototype.removeChart=function(){
         let chart=this.getChartElement();
-        if (! chart) return;
-        chart.innerHTML="";
+        if (chart) chart.innerHTML="";
+        if (this.tooltip){
+            this.tooltip.node().parentNode.removeChild(this.tooltip.node());
+            this.tooltip=undefined;
+        }
     }
     HistoryChart.prototype.format2=function (v){
         v=parseInt(v);
@@ -38,9 +29,23 @@ console.log("history diagram loaded");
             this.format2(dt.getHours())+":"+this.format2(dt.getMinutes());
     }
     HistoryChart.prototype.addToolTip=function(d3el,leftMargin,topMargin){
+        let self=this;
+        let ttPoint;
+        if (! this.useToolTip) return;
+        if (! this.tooltip){
+            this.tooltip = d3.select("body")
+                .append("div")
+                .style("position", "absolute")
+                .style("z-index", "10")
+                .style("visibility", "hidden")
+                .text("a simple tooltip");
+            this.tooltip.node().classList.add('tooltip');
+            this.tooltip.on("click", function () {
+                hideTT();
+            })
+        }
         let timer=undefined;
         let ttime=8000;
-        let self=this;
         let pixTolerance=25;
         function fillTT(ev){
             if (! self.tooltip) return;
@@ -73,7 +78,7 @@ console.log("history diagram loaded");
                         let dst=(dx*dx + dy*dy);
                         if (minDistance === undefined || dst < minDistance){
                             minDistance=dst;
-                            currentTarget={x:currentIdx,f:i,v:v,tv:tv};
+                            currentTarget={x:currentIdx,f:i,v:v,tv:tv,y:px};
                         }
                     }
                     currentIdx+=dir;
@@ -85,6 +90,13 @@ console.log("history diagram loaded");
                 +self.formatDate(new Date(currentTarget.tv))+"<br/>"
                 +currentTarget.v.toFixed(3)
             );
+            if (! ttPoint){
+                ttPoint=d3el.select('svg').append('circle')
+                    .attr('r',2)
+                    .attr('fill','black');
+            }
+            ttPoint.attr('cx',leftMargin+self.xScale(currentTarget.tv));
+            ttPoint.attr('cy',currentTarget.y);
             return true;
         }
         function showTT(ev){
@@ -93,7 +105,11 @@ console.log("history diagram loaded");
         }
         function hideTT(){
             if (! self.tooltip) return;
-            return self.tooltip.style("visibility", "hidden");
+            self.tooltip.style("visibility", "hidden");
+            if (ttPoint){
+                ttPoint.remove();
+                ttPoint=undefined;
+            }
         }
         d3el.on("pointerover", function(ev){
             ev.preventDefault();
@@ -243,8 +259,8 @@ console.log("history diagram loaded");
                     .attr("cy", function (d) {
                         return currentY(vf(d))
                     });
-                this.currentYScales.push(currentY);
             }
+            this.currentYScales.push(currentY);
         }
         self.addToolTip(d3.select(chart),margin.left,margin.top);
 
