@@ -114,8 +114,8 @@ D,1609545600,998.849953953,24.9590731069,14.8507830083
 ```
 Whenever the file is opened or AvNav is restarted a header line (starting with H) is written that contains the current field names that will be collected.
 After every period with data a "D" line is written that has a timestamp and the data values.
-The the files are read during start up the plugin compares the field names in the file with its configured names and reads 
-just the macthing fields. This way you can easily change the data that you collect without loosing old data.
+When the files are read during start up the plugin compares the field names in the file with its configured names and reads 
+just the matching fields. This way you can easily change the data that you collect without loosing old data.
   
 The plugin spawns an own thread that is doing some housekeeping by deleting the oldest entries internally (older then storeTime hours).
 It will also remove old files that will not be used any more.
@@ -131,7 +131,7 @@ Java Script
 ___________
 
 The java script part consists of [historychart.js](historychart.js) that is both used by the user app and the widget.
-It contains a function ChartHandler that you can instantiate to create charts.
+It contains a function HistoryChart that you can instantiate to create charts.
 The user app GUI is located in [index.js](index.js).
 The widget implementation is located in [plugin.js](plugin.js). It uses some trick do deal with the way AvNav is creating 
 it's HTML (DOM). Therefore in has a renderCanvas function that is simply used as it is called when the DOM is ready 
