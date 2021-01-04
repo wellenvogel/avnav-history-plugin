@@ -5,5 +5,9 @@
     flex: 1;
 }
 .HistoryWidget text.unit {
-    font-size: 0.5em !important;
+    font-size: 1rem !important;
+    transform: translate(30px, -20px);
+}
+.HistoryWidget text{
+    font-family: Verdana, Arial, sans-serif;
 }
