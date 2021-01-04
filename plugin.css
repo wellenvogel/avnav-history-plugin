@@ -1,0 +1,9 @@
+.HistoryWidget canvas {
+    height: 0;
+}
+.HistoryWidget .chartFrame {
+    flex: 1;
+}
+.HistoryWidget text.unit {
+    font-size: 0.5em !important;
+}

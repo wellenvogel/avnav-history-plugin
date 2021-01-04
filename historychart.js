@@ -9,6 +9,13 @@ console.log("history diagram loaded");
         this.currentYScales=[];
         this.xScale=undefined;
     }
+    HistoryChart.prototype.setChartElement=function(newel){
+        if (this.element){
+            this.removeChart();
+            this.element=undefined;
+        }
+        this.element=newel;
+    }
     HistoryChart.prototype.getChartElement=function(){
         return typeof(this.element) === 'string'? document.querySelector(this.element):this.element;
     }
@@ -28,6 +35,16 @@ console.log("history diagram loaded");
         return dt.getFullYear()+"/"+this.format2(dt.getMonth()+1)+"/"+this.format2(dt.getDate())+" "+
             this.format2(dt.getHours())+":"+this.format2(dt.getMinutes());
     }
+    /**
+     * add a tooltip to the chart
+     * as only selecting the real curves does not work on touch devices (points too small)
+     * we capture events on the outer dive and compute the value by our own
+     * we first determine the best matching time from the data (within a pixel tolerance) and
+     * afterwards find the data item that is closest to our touch/click point
+     * @param d3el the outer div of the chart
+     * @param leftMargin left margin of the chart data relative to the d3el
+     * @param topMargin top margin of the chart relative to the div
+     */
     HistoryChart.prototype.addToolTip=function(d3el,leftMargin,topMargin){
         let self=this;
         let ttPoint;
@@ -162,6 +179,12 @@ console.log("history diagram loaded");
         if (typeof(formatter) !== 'object') return;
         return formatter.unit;
     }
+    /**
+     * draw a chart based on the received data from the server and the field definitions
+     * @param serverData a json object having the values in data (order of values must match the order in fields)
+     * @param fields the field definitions (name,color,formatter,enabled)
+     * @param opt_showLines if true - show lines instead of points
+     */
     HistoryChart.prototype.createChart=function(serverData,fields,opt_showLines){
         let self=this;
         let data=serverData.data;
@@ -214,6 +237,7 @@ console.log("history diagram loaded");
                 let unit = self.getYtitle(field);
                 if (unit) {
                     svg.append('text')
+                        .attr('class','unit')
                         .attr('text-anchor', 'end')
                         .attr('x', leftMargin - 10)
                         .attr('y', margin.top + 20)
@@ -282,6 +306,8 @@ console.log("history diagram loaded");
     }catch (e){
         console.log("unable to read parent");
     }
+    //register our formatters
+    //we do this at a global level to give the user a change to add its own
     window[NAME].HistoryFormatter.hectoPascal={unit:'hPa',f:function(v){return v/100}};
     window[NAME].HistoryFormatter.celsius={unit:'°',f:function(v){return v-273.15}};
     window[NAME].HistoryFormatter.knots={unit:'kn',f:function(v){return v*3600.0/1852.0}};
