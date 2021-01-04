@@ -215,7 +215,11 @@ class Plugin:
     self.baseDir=None
     self.storeTime=None
     self.period=None
+    self.sequence=1 #changed if new data is added or data removed
 
+
+  def updateSequence(self):
+    self.sequence+=1
 
   def computeFileName(self,daysDiff=0):
     now=datetime.datetime.utcnow()
@@ -335,6 +339,7 @@ class Plugin:
     cleanupThread.setDaemon(True)
     cleanupThread.start()
     currentValues={}
+    self.updateSequence()
     for f in self.dataKeys:
       currentValues[f]=Average()
     lastWrite=0
@@ -397,6 +402,7 @@ class Plugin:
             hwriter=HistoryFileWriter(nextFile,self.dataKeys)
           self.values.append(record)
           hwriter.writeRecord(REC_DATA,record)
+          self.updateSequence()
           lastWrite=now
           hasValues=False
       except Exception as e:
@@ -409,6 +415,8 @@ class Plugin:
       while len(self.values) >0 and self.values[0][0] < cleanupTime:
         self.values.pop(0)
         numRemoved+=1
+      if numRemoved > 0:
+        self.updateSequence()
       self.api.debug("removed %d entries from history",numRemoved)
       keepFiles=[self.computeFileName(+1)]
       keepFiles.extend(self.getAllFileNames())
@@ -445,7 +453,8 @@ class Plugin:
               'oldest': self.values[0][0] if len(self.values) else None,
               'fields': self.dataKeys,
               'period': self.period,
-              'storeTime': self.storeTime
+              'storeTime': self.storeTime,
+              'sequence': self.sequence
               }
     if url == 'history':
       fromTime=args.get('fromTime')
@@ -476,6 +485,7 @@ class Plugin:
         'status':'OK',
         'fields': keys,
         'period': self.period,
+        'sequence': self.sequence,
         'data':values
       }
 

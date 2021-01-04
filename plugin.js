@@ -13,8 +13,11 @@ let HistoryWidget={
     name: 'HistoryWidget',
     initFunction:function (context){
         tryCreateChartHandler(context);
+        context.isActive=true;
     },
     renderHtml:function(props){
+        if (this.timer) window.clearInterval(this.timer);
+        this.timer=undefined;
         return '<div class="chartFrame"></div>';
     },
     /**
@@ -35,6 +38,7 @@ let HistoryWidget={
         if (props.hours){
             url+="&fromTime="+encodeURIComponent((new Date().getTime())/1000-3600*props.hours);
         }
+        let self=this;
         fetch(url)
             .then(function(resp){return resp.json()})
             .then(function(data){
@@ -45,7 +49,27 @@ let HistoryWidget={
                 };
                 let chart=widget.querySelector('.chartFrame');
                 if (! chart) return ;
+                self.sequence=data.sequence;
                 chartHandler.setChartElement(chart);
+                if (self.timer) window.clearInterval(self.timer);
+                let timerInterval=(data.period||30)/5;
+                if (timerInterval < 1) timerInterval=1;
+                //periodically query the server to check if some data has changed
+                self.timer=window.setInterval(function(){
+                    let url=AVNAV_BASE_URL + "/api/status";
+                    fetch(url)
+                        .then(function(resp){return resp.json()})
+                        .then(function(status){
+                            if (!self.isActive) return;
+                            if (status.sequence !== self.sequence){
+                                //data in plugin has changed - redraw
+                                self.triggerRedraw();
+                                window.clearInterval(self.timer);
+                                self.timer=undefined;
+                            }
+                        })
+                        .catch(function(error){})
+                },timerInterval*1000);
                 chartHandler.createChart(data,[fieldDef],props.showLines)
 
             })
@@ -55,6 +79,10 @@ let HistoryWidget={
         if (context.chartHandler){
             context.chartHandler.removeChart();
         }
+        if (context.timer){
+            window.clearInterval(context.timer);
+        }
+        context.isActive=false;
     }
 
 }
