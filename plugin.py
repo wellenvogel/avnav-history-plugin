@@ -175,7 +175,7 @@ class Plugin:
         {
           'name': 'period',
           'description': 'period for writing in s',
-          'default': '5'
+          'default': '30'
         }
         ,
         {
