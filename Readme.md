@@ -1,7 +1,8 @@
 AvNav History Plugin
 ===========================
 
-This project provides a plugin for [AvNav](https://www.wellenvogel.net/software/avnav/docs/beschreibung.html?lang=en) that collects the history of selected data and provides a UI for displaying them in a diagram.
+This project provides a plugin for [AvNav](https://www.wellenvogel.net/software/avnav/docs/beschreibung.html?lang=en) 
+that collects the history of selected data and provides a UI for displaying it in a diagram.
 
 The project is based on ideas from a discussion in the (german) [Segeln Forum](https://www.segeln-forum.de/board194-boot-technik/board35-elektrik-und-elektronik/board195-open-boat-projects-org/p2243721-arduino-nmea0183-barometer/#post2243721).
 
@@ -16,6 +17,9 @@ License: [MIT](LICENSE.md)
 
 ![ScreenShot](doc/Screenshot.png)
 
+
+![ScreenShot2](doc/Screenshot-widget.png)
+
 Installation
 ------------
 You can use the plugin in 2 different ways.
@@ -27,7 +31,7 @@ You can use the plugin in 2 different ways.
     sudo dpkg -i avnav-history-plugin...._all.deb
     ```
 
-Configuration
+Configuration (Server)
 -------------
 You need to configure the the values you would like to store, the interval and the store time.
 ```
@@ -66,10 +70,37 @@ User App
 The plugin registers a [User App](https://www.wellenvogel.net/software/avnav/docs/userdoc/addonconfigpage.html?lang=en#h1:ConfigurationofUserApps)
 that provides a simple graphical display of the collected data using [d3.js](https://d3js.org/) - see screenshot.
 You can select the values to be displayed and that number of hours backwards from now you would like to see.
-The implementation is some [html](index.html) and mainly a [bit of js code](index.js). 
+Additionally you can select the formatter to be used to display the values.
+There is a tooltip showing the current value once you hover/click near a curve.
+The implementation is some [html](index.html) and some java script code in [index.js](index.js) and 
+[historychart.js](historychart.js). 
+
+Widget
+------
+The plugin provides a [HistoryWidget](plugin.js).
+This widget can be used to display selected history data. You can choose the field you would like to display, the color, the time frame,
+and the formatter for the data. 
+
+Formatter
+---------
+To display the values in a human readable form there is a couple of formatters that you can select. 
+To add other formatters you can put some code into your [user.js](https://www.wellenvogel.net/software/avnav/docs/hints/userjs.html?lang=en)
+```
+    let pn="avnavHistoryPlugin";
+    if (! window[pn]) window[pn]={};
+    if (! window[pn].HistoryFormatter) window[pn].HistoryFormatter={};
+    let formatters=window[pn].HistoryFormatter;
+    formatters.bar={unit:'Bar',f:function(v){return v/100000} };
+``` 
+This example adds a formatter to display Pressure in Bar. You need to check/create the appropriate Objects starting from the window level:
+`window.avnavHistoryPlugin.HistoryFormatter`.
+Once you have added a formatter this way it can be used both for the UserApp and for the Widget.
 
 Implementation Details
 ----------------------
+
+Server
+______
 
 The [python part](plugin.py) reads the configuration, and registers itself for HTTP API requests.
 It reads the available history files (starting at the configured storeTime backwards).
@@ -95,7 +126,16 @@ request | function
 --------|---------
 ..../api/status | return a json object with status=OK,field names, number of records, period, storeTime, oldest
 ..../api/histoy | returns a json object with fields, period and data - an array with the values. you can provide a fields parameter and fromTime,toTime
-              
+      
+Java Script
+___________
+
+The java script part consists of [historychart.js](historychart.js) that is both used by the user app and the widget.
+It contains a function ChartHandler that you can instantiate to create charts.
+The user app GUI is located in [index.js](index.js).
+The widget implementation is located in [plugin.js](plugin.js). It uses some trick do deal with the way AvNav is creating 
+it's HTML (DOM). Therefore in has a renderCanvas function that is simply used as it is called when the DOM is ready 
+(but there is no drawing to this canvas).              
 
 Package Building
 ----------------
@@ -103,3 +143,4 @@ For a simple package building [NFPM](https://nfpm.goreleaser.com/) is used and s
 
 Additionally a [GitHub workflow](.github/workflows/createPackage.yml) has been set up to create a release and build a package whenever you push to the release branch.
 So when you fork this repository you can create a package even without a local environment.
+To trigger a package build at GitHub after forking just create a release branch and push this.
