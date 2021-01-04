@@ -226,7 +226,10 @@ console.log("history diagram loaded");
             let field = fields[idx];
             let vf = self.getFormatterFunction(field, idx);
             if (currentY === undefined || (field.ownAxis === undefined || field.ownAxis)) {
-                let ext = d3.extent(data, vf);
+                let ext = d3.extent(data.filter(function(row){
+                    return ! (isNaN(row[idx+1]) || row[idx+1] === null)
+                    }
+                ), vf);
                 currentY = d3.scaleLinear()
                     .domain([ext[0] >= 0 ? 0 : ext[0], ext [1]]).nice()
                     .range([height, 0]);
