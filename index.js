@@ -185,7 +185,11 @@ console.log("history main loaded");
             .then(function(resp){return resp.json()})
             .then(function(data){
                 let hours=data.storeTime;
-                let selectHours=[Math.ceil(hours),Math.ceil(hours*2/3),Math.ceil(hours/3)];
+                let numHours=5;
+                let selectHours=[];
+                for (let i=numHours;i>=1;i--){
+                    selectHours.push(Math.ceil(i*hours/numHours));
+                }
                 let hsParent=document.getElementById('hourSelect');
                 for (let i=0;i<selectHours.length;i++){
                     let hs=createRadio('hour',selectHours[i]+"h",selectHours[i],"hourSelector");
