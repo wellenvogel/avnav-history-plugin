@@ -1,6 +1,5 @@
 import time
 import threading
-import serial
 import time
 import os
 import datetime
