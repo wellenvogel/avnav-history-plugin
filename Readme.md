@@ -24,7 +24,8 @@ Installation
 ------------
 You can use the plugin in 2 different ways.
 1.  Download the source code as a zip and unpack it into a directory /home/pi/avnav/data/plugins/history.
-    In this case the name of the plugin will be user-setalk-remote. You can change the files and adapt it to your needs.
+    If the directiry does not exist just create it. On an normal linux system (not raspberry pi) the directory will be /home/(user)/avnav/plugins/history.
+    In this case the name of the plugin will be user-history. You can change the files and adapt it to your needs.
 
 1.  Download the package provided in the releases section or build your own package using buildPackage.sh (requires a linux machine with docker installed). Install the package using the command
     ```
@@ -69,10 +70,10 @@ User App
 --------
 The plugin registers a [User App](https://www.wellenvogel.net/software/avnav/docs/userdoc/addonconfigpage.html?lang=en#h1:ConfigurationofUserApps)
 that provides a simple graphical display of the collected data using [d3.js](https://d3js.org/) - see screenshot.
-You can select the values to be displayed and that number of hours backwards from now you would like to see.
+You can select the values to be displayed and the number of hours backwards from now you would like to see.
 Additionally you can select the formatter to be used to display the values.
 There is a tooltip showing the current value once you hover/click near a curve.
-The implementation is some [html](index.html) and some java script code in [index.js](index.js) and 
+The implementation is some [html code](index.html) and some java script code in [index.js](index.js) and 
 [historychart.js](historychart.js). 
 
 Widget
@@ -84,7 +85,7 @@ and the formatter for the data.
 Formatter
 ---------
 To display the values in a human readable form there is a couple of formatters that you can select. 
-To add other formatters you can put some code into your [user.js](https://www.wellenvogel.net/software/avnav/docs/hints/userjs.html?lang=en)
+To add other formatters you can put code into your [user.js](https://www.wellenvogel.net/software/avnav/docs/hints/userjs.html?lang=en)
 ```
     let pn="avnavHistoryPlugin";
     if (! window[pn]) window[pn]={};
