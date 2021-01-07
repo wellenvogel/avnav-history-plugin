@@ -102,7 +102,7 @@ class HistoryFileReader:
           self.api.debug("unable to read record %s",line)
           continue
     except Exception as e:
-      self.api.error("Error reading from file %s: %s",self.filename,unicode(e.message))
+      self.api.error("Error reading from file %s: %s",self.filename,str(e))
     return rt
 
   def close(self):
@@ -224,7 +224,7 @@ class Plugin:
     now=datetime.datetime.utcnow()
     if daysDiff != 0:
       now+=datetime.timedelta(days=daysDiff)
-    return os.path.join(self.baseDir,unicode(now.strftime("%Y-%m-%d")+".avh"))
+    return os.path.join(self.baseDir,str(now.strftime("%Y-%m-%d")+".avh"))
 
   def getAllFileNames(self):
     '''
@@ -277,11 +277,11 @@ class Plugin:
     sensors=self.getConfigValue('sensorNames')
     self.dataKeys=[]
     if sensors is not None:
-      self.xdrNames=filter(lambda k: k != "",sensors.split(","))
+      self.xdrNames=list(filter(lambda k: k != "",sensors.split(",")))
       self.dataKeys.extend(self.xdrNames)
     storeKeys=self.getConfigValue('storeKeys')
     if storeKeys is not None:
-      self.storeKeys=filter(lambda k: k != "",storeKeys.split(","))
+      self.storeKeys=list(filter(lambda k: k != "",storeKeys.split(",")))
       self.dataKeys.extend(self.storeKeys)
     if len(self.dataKeys) < 1:
       self.api.setStatus("ERROR", "no parameter sensorNames or storeKeys configured")
@@ -298,12 +298,12 @@ class Plugin:
     try:
       self.storeTime=int(self.getConfigValue('storeTime'))
     except Exception as e:
-      self.api.setStatus("ERROR", "error getting storeTime: %s" % unicode(e.message))
+      self.api.setStatus("ERROR", "error getting storeTime: %s" % str(e))
       return
     try:
       self.period=int(self.getConfigValue('period'))
     except Exception as e:
-      self.api.setStatus("ERROR", "error getting period: %s" % unicode(e.message))
+      self.api.setStatus("ERROR", "error getting period: %s" % str(e))
       return
     self.storePollingPeriod=self.getConfigValue('pollingInterval')
     if self.storePollingPeriod is None:
@@ -318,7 +318,7 @@ class Plugin:
         if self.storePollingPeriod > self.period/2:
           self.storePollingPeriod=self.period/2
       except Exception as e:
-        self.api.setStatus("ERROR","unable to get store period: %s"%unicode(e.message))
+        self.api.setStatus("ERROR","unable to get store period: %s"%str(e))
         return
     self.api.registerUserApp(self.api.getBaseUrl()+'/index.html',os.path.join('icons','show_chart.svg'),'History')
     minTime=time.time()-self.storeTime*3600
@@ -332,7 +332,7 @@ class Plugin:
           self.values.extend(reader.getRecords(minTime))
           reader.close()
       except Exception as e:
-        self.api.error("error reading history: %s",unicode(e.message))
+        self.api.error("error reading history: %s",str(e))
     self.api.log("%d entries in history", len(self.values))
     cleanupThread=threading.Thread(target=self.cleanup,name="barograph-cleanup")
     cleanupThread.setDaemon(True)
@@ -372,7 +372,7 @@ class Plugin:
                       currentValues[tname].add(self.convertValue(tdata,tunit))
                       hasValues=True
                 except Exception as e:
-                  self.api.error("NMEA error in %s: %s",line,unicode(e.message))
+                  self.api.error("NMEA error in %s: %s",line,str(e))
               i+=4
         now=time.time()
         if self.storeKeys is not None and len(self.storeKeys) > 0 and (now >= (lastStorePoll + self.storePollingPeriod) or now < lastStorePoll):
@@ -382,7 +382,7 @@ class Plugin:
               if currentValues[sk].add(v):
                 hasValues=True
             except Exception as e:
-              self.api.debug("unable to fetch %s: %s",sk,unicode(e.message))
+              self.api.debug("unable to fetch %s: %s",sk,str(e))
           lastStorePoll=now
         if hasValues and (now >= (lastWrite+self.period) or now < lastWrite):
           if not dataReceived:
@@ -405,7 +405,7 @@ class Plugin:
           lastWrite=now
           hasValues=False
       except Exception as e:
-        self.api.error("error in plugin loop: %s",unicode(e.message))
+        self.api.error("error in plugin loop: %s",str(e))
   def cleanup(self):
     while True:
       self.api.debug("cleanup loop")
@@ -476,10 +476,10 @@ class Plugin:
       if indices is not None and len(indices) < 1:
         values=[]
       else:
-        values=map(lambda r: r if indices is None else self.getFilteredValues(indices,r),
-                 filter(lambda r:
+        values=list(map(lambda r: r if indices is None else self.getFilteredValues(indices,r),
+                 list(filter(lambda r:
                       (fromTime is None or r[0] >= fromTime) and (toTime is None or r[0] <= toTime),
-                      self.values))
+                      self.values))))
       return {
         'status':'OK',
         'fields': keys,
