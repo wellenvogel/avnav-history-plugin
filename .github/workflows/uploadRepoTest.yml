@@ -5,20 +5,32 @@ on:
   workflow_dispatch:
 
 jobs:
-  # This workflow contains a single job called "build"
-  build:
+  
+  deploy:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
+    steps:
 
-    - name: Create Artifact
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Create Artifact
         run: echo "test" > test.txt
-
-    - name: Upload Repository
-        if: {{ $secrets.REPO_KEY && $secrets.REPO_USER && $secrets.REPO_SERVER}}
-        uses:   wlixcc/SFTP-Deploy-Action@v1.0
+      - name: deps
+        run: npm install ssh2-sftp-client
+      - name: Upload Repository
+        if:  secrets.REPO_KEY && secrets.REPO_USER &&  secrets.REPO_SERVER
+        uses:  actions/github-script@v3
+        env:
+          REPO_KEY: '${{ secrets.REPO_KEY }}'
         with:
-          username: {{ $secrets.REPO_USER }}
-          server: {{ $secrets.REPO_SERVER }}
-          ssh_private_key: {{ $secrets.REPO_KEY }}
-          local_path: './test.txt'
-          remote_path: '/release/avnav-history-plugin/test'
+          REPO_KEY: '${{ secrets.REPO_KEY }}'
+          REPO_SERVER: '${{ secrets.REPO_SERVER }}'
+          REPO_USER: '${{ secrets.REPO_USER }}'
+          FILE_NAME: 'test.txt'
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const upload=require(`${process.env.GITHUB_WORKSPACE}/.github/sftpUpload.js`);        
+            let res=await upload(core.getInput('REPO_SERVER') ,core.getInput('REPO_USER'),core.getInput('REPO_KEY'),`${process.env.GITHUB_WORKSPACE}/${core.getInput('FILE_NAME')}`,'/release/avnav-history-plugin/test');
+            if (res !== '') throw new Error(res);
+            console.log("script done");

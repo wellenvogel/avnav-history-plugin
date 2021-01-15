@@ -65,7 +65,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Upload Repository
-        if: {{ $secrets.REPO_KEY && $secrets.REPO_USER && $secrets.REPO_SERVER}}
+        if: secrets.REPO_KEY && secrets.REPO_USER && secrets.REPO_SERVER 
         uses:   wlixcc/SFTP-Deploy-Action@v1.0
         with:
-          username: {{ $secrets.REPO_KEY}}
+          username: ${{secrets.REPO_KEY}}
