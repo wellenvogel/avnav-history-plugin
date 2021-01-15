@@ -19,18 +19,24 @@ jobs:
       - name: deps
         run: npm install ssh2-sftp-client
       - name: Upload Repository
-        if:  secrets.REPO_KEY && secrets.REPO_USER &&  secrets.REPO_SERVER
         uses:  actions/github-script@v3
-        env:
-          REPO_KEY: '${{ secrets.REPO_KEY }}'
         with:
           REPO_KEY: '${{ secrets.REPO_KEY }}'
           REPO_SERVER: '${{ secrets.REPO_SERVER }}'
           REPO_USER: '${{ secrets.REPO_USER }}'
           FILE_NAME: 'test.txt'
+          REMOTE_DIR: '/release/avnav-history-plugin/test'
           github-token: ${{secrets.GITHUB_TOKEN}}
           script: |
-            const upload=require(`${process.env.GITHUB_WORKSPACE}/.github/sftpUpload.js`);        
-            let res=await upload(core.getInput('REPO_SERVER') ,core.getInput('REPO_USER'),core.getInput('REPO_KEY'),`${process.env.GITHUB_WORKSPACE}/${core.getInput('FILE_NAME')}`,'/release/avnav-history-plugin/test');
-            if (res !== '') throw new Error(res);
+            let key=core.getInput('REPO_KEY')
+            let user=core.getInput('REPO_USER')
+            let server=core.getInput('REPO_SERVER')
+            if (key && user && server){
+              const upload=require(`${process.env.GITHUB_WORKSPACE}/.github/sftpUpload.js`);        
+              let res=await upload(server ,user,key,`${process.env.GITHUB_WORKSPACE}/${core.getInput('FILE_NAME')}`,core.getInput('REMOTE_DIR'));
+              if (res !== '') throw new Error(res);
+            }
+            else{
+              console.log("secrets not set, skipping upload");
+            }
             console.log("script done");
