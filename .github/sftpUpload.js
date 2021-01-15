@@ -21,8 +21,9 @@ async function upload(host,user,key,local,remoteDir){
         console.log("uploading "+local+" to "+remoteDir);
         return sftp.put(local,remoteDir+"/"+remoteFile);
     })
+    .then(()=>sftp.end())
     .then(()=>'')
-    .catch((error)=>{return error});
+    .catch((error)=>{sftp.end();return error});
     console.log("upload returns: "+result);
     return result;
 }
