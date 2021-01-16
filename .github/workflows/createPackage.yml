@@ -67,7 +67,7 @@ jobs:
       - name: Upload Repository
         uses:  wellenvogel/sftp-upload-action@v1.0
         with:
-          priivateKey: '${{ secrets.REPO_KEY }}'
+          privateKey: '${{ secrets.REPO_KEY }}'
           server: '${{ secrets.REPO_SERVER }}'
           user: '${{ secrets.REPO_USER }}'
           localFile: ${{ steps.pkgyml.outputs.name }}_${{ steps.version.outputs.version}}_${{ steps.pkgyml.outputs.arch }}.deb
