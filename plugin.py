@@ -40,11 +40,12 @@ class HistoryFileWriter:
 
 
 class HistoryFileReader:
-  def __init__(self,filename,fields):
+  def __init__(self,filename,fields,api=None):
     self.filename=filename
     self.fields=fields
     self.file=None
     self.requestedFields=fields
+    self.api=api
     if os.path.isfile(filename):
       self.file=open(filename,"r")
 
@@ -99,10 +100,12 @@ class HistoryFileReader:
           if hasFields:
             rt.append(opline)
         except:
-          self.api.debug("unable to read record %s",line)
+          if self.api is not None:
+            self.api.debug("unable to read record %s",line)
           continue
     except Exception as e:
-      self.api.error("Error reading from file %s: %s",self.filename,str(e))
+      if self.api is not None:
+        self.api.error("Error reading from file %s: %s",self.filename,str(e))
     return rt
 
   def close(self):
@@ -328,7 +331,7 @@ class Plugin:
       try:
         if os.path.exists(historyFile):
           self.api.log("reading file %s", historyFile)
-          reader=HistoryFileReader(historyFile,self.dataKeys)
+          reader=HistoryFileReader(historyFile,self.dataKeys,self.api)
           self.values.extend(reader.getRecords(minTime))
           reader.close()
       except Exception as e:
