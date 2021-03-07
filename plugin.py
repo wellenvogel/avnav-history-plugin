@@ -144,6 +144,41 @@ class Average:
 
 
 class Plugin:
+  CONFIG=[
+    {
+      'name': 'period',
+      'description': 'period for writing in s',
+      'default': 30,
+      'type': 'NUMBER'
+    }
+    ,
+    {
+      'name': 'pollingInterval',
+      'description': 'polling interval for internal store (seconds), defaults to period/10',
+      'default': 30,
+      'type':'NUMBER'
+    }
+    ,
+
+    {
+      'name': 'storeTime',
+      'description': 'how long to store the history (h)',
+      'default': 48,
+      'type':'NUMBER'
+    }
+
+  ]
+  OLD_CONFIG=[{
+               'name': 'sensorNames',
+               'description': 'the sensor names we look for in XDR records separated by ,',
+               'default': None
+             },
+            {
+              'name': 'storeKeys',
+              'description': 'data to be fetched from the AvNav internal store ,',
+              'default': None
+            }
+  ]
 
   @classmethod
   def pluginInfo(cls):
@@ -158,42 +193,7 @@ class Plugin:
     """
     return {
       'description': 'seatalk remote control',
-      'config': [
-        {
-          'name': 'enabled',
-          'description': 'set to true to enable plugin',
-          'default': 'true'
-        },
-        {
-          'name': 'sensorNames',
-          'description': 'the sensor names we look for in XDR records separated by ,',
-          'default': None
-        },
-        {
-          'name': 'storeKeys',
-          'description': 'data to be fetched from the AvNav internal store ,',
-          'default': None
-        },
-        {
-          'name': 'period',
-          'description': 'period for writing in s',
-          'default': '30'
-        }
-        ,
-        {
-          'name': 'pollingInterval',
-          'description': 'polling interval for internal store (seconds), defaults to period/10',
-          'default': None
-        }
-        ,
-
-        {
-          'name': 'storeTime',
-          'description': 'how long to store the history (h)',
-          'default': '48'
-        }
-
-        ],
+      'config': cls.CONFIG+cls.OLD_CONFIG ,
       'data': [
       ]
     }
@@ -218,6 +218,22 @@ class Plugin:
     self.storeTime=None
     self.period=None
     self.sequence=1 #changed if new data is added or data removed
+    self.changeSequence=0
+    self.startSequence=0
+    self.canEdit=False
+    if hasattr(self.api,'registerEditableParameters'):
+      self.api.registerEditableParameters(self.CONFIG,self._changeConfig)
+      self.canEdit=True
+    if hasattr(self.api,'registerRestart'):
+      self.api.registerRestart(self._apiRestart)
+
+  def _apiRestart(self):
+    self.startSequence+=1
+    self.changeSequence+=1
+
+  def _changeConfig(self,newValues):
+    self.api.saveConfigValues(newValues)
+    self.changeSequence+=1
 
 
   def updateSequence(self):
@@ -261,8 +277,24 @@ class Plugin:
       value=value*100*1000
     return value
 
+  STOP_RETURN=0
+  STOP_AGAIN=1
+  STOP_WAIT=2
 
   def run(self):
+    startSequence=self.startSequence
+    self.api.registerUserApp(self.api.getBaseUrl()+'/index.html',os.path.join('icons','show_chart.svg'),'History')
+    while startSequence == self.startSequence:
+      rt=self.runInternal()
+      if rt is None or rt == self.STOP_RETURN:
+        return
+      if rt == self.STOP_WAIT:
+        changeSequence=self.changeSequence
+        while changeSequence == self.changeSequence:
+          time.sleep(1)
+
+
+  def runInternal(self):
     """
     the run method
     this will be called after successfully instantiating an instance
@@ -271,12 +303,24 @@ class Plugin:
     and writes them to the store every 10 records
     @return:
     """
+    changeSequence=self.changeSequence
     seq=0
+    self.values=[]
     self.api.log("started")
     enabled=self.getConfigValue('enabled')
     if enabled is not None and enabled.lower()!='true':
       self.api.setStatus("INACTIVE", "disabled by config")
-      return
+      return self.STOP_RETURN
+    try:
+      self.period=float(self.getConfigValue('period'))
+    except Exception as e:
+      self.api.setStatus("ERROR", "error getting period: %s" % str(e))
+      return self.STOP_WAIT
+    try:
+      self.storeTime=float(self.getConfigValue('storeTime'))
+    except Exception as e:
+      self.api.setStatus("ERROR", "error getting storeTime: %s" % str(e))
+      return self.STOP_WAIT
     sensors=self.getConfigValue('sensorNames')
     self.dataKeys=[]
     if sensors is not None:
@@ -288,26 +332,16 @@ class Plugin:
       self.dataKeys.extend(self.storeKeys)
     if len(self.dataKeys) < 1:
       self.api.setStatus("ERROR", "no parameter sensorNames or storeKeys configured")
-      return
+      return self.STOP_WAIT
     if self.dataKeys[0] == "":
       self.api.setStatus("ERROR", "empty parameter sensorNames / storeKeys configured")
-      return
+      return self.STOP_WAIT
     self.baseDir=os.path.join(self.api.getDataDir(),"plugins",NAME)
     if not os.path.exists(self.baseDir):
       os.makedirs(self.baseDir)
     if not os.path.isdir(self.baseDir):
       self.api.setStatus("ERROR", "unable to create basedir %s"%self.baseDir)
-      return
-    try:
-      self.storeTime=int(self.getConfigValue('storeTime'))
-    except Exception as e:
-      self.api.setStatus("ERROR", "error getting storeTime: %s" % str(e))
-      return
-    try:
-      self.period=int(self.getConfigValue('period'))
-    except Exception as e:
-      self.api.setStatus("ERROR", "error getting period: %s" % str(e))
-      return
+      raise Exception("unable to create basedir %s"%self.baseDir)
     self.storePollingPeriod=self.getConfigValue('pollingInterval')
     if self.storePollingPeriod is None:
       self.storePollingPeriod=self.period/10
@@ -322,8 +356,7 @@ class Plugin:
           self.storePollingPeriod=self.period/2
       except Exception as e:
         self.api.setStatus("ERROR","unable to get store period: %s"%str(e))
-        return
-    self.api.registerUserApp(self.api.getBaseUrl()+'/index.html',os.path.join('icons','show_chart.svg'),'History')
+        return self.STOP_WAIT
     minTime=time.time()-self.storeTime*3600
     currentFile = self.computeFileName()
     allFiles=self.getAllFileNames()
@@ -351,7 +384,7 @@ class Plugin:
     dataReceived=False
     waitTime=0.3
     lastStorePoll=0
-    while True:
+    while changeSequence == self.changeSequence:
       try:
         seq,data=self.api.fetchFromQueue(seq,10,filter="$XDR",waitTime=waitTime)
         if len(data) > 0:
@@ -409,8 +442,17 @@ class Plugin:
           hasValues=False
       except Exception as e:
         self.api.error("error in plugin loop: %s",str(e))
+    return self.STOP_AGAIN
+
   def cleanup(self):
-    while True:
+    changeSequence=self.changeSequence
+    lastCleanup=0
+    while changeSequence == self.changeSequence:
+      now=time.time()
+      if now < (lastCleanup +60) and now >= lastCleanup:
+        time.sleep(1)
+        continue
+      lastCleanup=now
       self.api.debug("cleanup loop")
       cleanupTime=time.time()-self.storeTime*3600
       numRemoved=0
@@ -428,7 +470,7 @@ class Plugin:
           continue
         self.api.log("removing old file %s",file)
         os.remove(file)
-      time.sleep(60)
+
 
 
   def getFilteredValues(self,indices,row):
@@ -439,6 +481,14 @@ class Plugin:
       else:
         rt.append(None)
     return rt
+
+  def _getRequestParam(self,param,name,raiseMissing=True):
+    data = param.get(name)
+    if data is None or len(data) != 1:
+      if not raiseMissing:
+        return None
+      raise Exception("missing parameter %s"%name)
+    return data[0]
 
   def handleApiRequest(self,url,handler,args):
     """
@@ -456,7 +506,8 @@ class Plugin:
               'fields': self.dataKeys,
               'period': self.period,
               'storeTime': self.storeTime,
-              'sequence': self.sequence
+              'sequence': self.sequence,
+              'canEdit': self.canEdit
               }
     if url == 'history':
       fromTime=args.get('fromTime')
@@ -490,6 +541,45 @@ class Plugin:
         'sequence': self.sequence,
         'data':values
       }
+
+    if url == 'listKeys':
+      BLACKLIST=['tag','source','mode','updatealarm','updateleg','updateroute']
+      storeData=self.api.getDataByPrefix('gps')
+      keylist=[]
+      for k,v in storeData.items():
+        if type(v) is not dict:
+          if k not in BLACKLIST:
+            keylist.append('gps.'+k)
+      return {
+        'status':'OK',
+        'data':keylist
+      }
+    if url == 'getKeys':
+      return {
+        'status':'OK',
+        'data': self.getConfigValue('storeKeys')
+      }
+    if url == 'saveSettings':
+      if not self.canEdit:
+        raise Exception("unable to store settings in this version")
+      newKeys=self._getRequestParam(args,'storeKeys')
+      period=self._getRequestParam(args,'period',raiseMissing=False)
+      storeTime=self._getRequestParam(args,'storeTime',raiseMissing=False)
+      sensorNames=self._getRequestParam(args,'sensorNames',raiseMissing=False)
+      newConfig={'storeKeys':newKeys}
+      if period is not None:
+        period=float(period)
+        if (period < 1 ):
+          raise Exception("period must be > 1")
+        newConfig['period']=period
+      if storeTime is not None:
+        storeTime=float(storeTime)
+        if (storeTime < 1):
+          raise Exception("store time must be > 1")
+      if sensorNames is not None:
+        newConfig['sensorNames']=sensorNames
+      self._changeConfig(newConfig)
+      return {'status':'OK'}
 
     return {'status','unknown request'}
 

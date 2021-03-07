@@ -1,38 +1,74 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="theme-color" content="#000000">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-title" content="History">
-    <link rel="stylesheet" href="index.css">
-    <script type="text/javascript" src="lib/d3.v6.min.js"></script>
-    <script type="text/javascript" src="historychart.js"></script>
-    <script type="text/javascript" src="index.js"></script>
 
-    <title>History</title>
-  </head>
-  <body>
-    <noscript>
-      Diese Seite funktioniert nur mit java script.
-    </noscript>
-    <div id="root">
-      <div class="chartFrame">
-        <div id="chart"></div>
-        <div class="selector" >
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="theme-color" content="#000000">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="History">
+  <link rel="stylesheet" href="index.css">
+  <script type="text/javascript" src="lib/d3.v6.min.js"></script>
+  <script type="text/javascript" src="historychart.js"></script>
+  <script type="text/javascript" src="index.js"></script>
+
+  <title>History</title>
+</head>
+
+<body>
+  <noscript>
+    Diese Seite funktioniert nur mit java script.
+  </noscript>
+  <div id="root">
+    <div class="chartFrame">
+      <div id="chart"></div>
+      <div class="selectorFrame">
+        <div class="selector">
           <div id="selectors"></div>
-          <div class="startSelect">
-            <div id="hourSelect"></div>
-            <div id="typeSelect"></div>
-            <div class="buttons">
-              <button class="start" id="start"></button>
-              <button class="reload" id="reload"></button>
-            </div>
+        </div>
+        <div class="startSelect">
+          <div id="hourSelect"></div>
+          <div id="typeSelect"></div>
+          <div class="buttons">
+            <button class="start" id="start"></button>
+            <button class="reload" id="reload"></button>
+            <button class="settings" id="settings"></button>
           </div>
         </div>
       </div>
+    </div>
   </div>
-  </body>
+  <div class="overlayFrame" id="editOverlay">
+    <div class="overlay">
+      <div class="overlayContent">
+        <h3>Parameters</h3>
+        <div class="inputRow">
+          <span class="label">
+            Period(s)
+          </span>
+          <input type="number" id="settings_period">
+        </div>
+        <div class="inputRow">
+            <span class="label">
+              StoreTime(h)
+            </span>
+            <input type="number" id="settings_storeTime">
+          </div>
+        <h3>Fields</h3>
+        <div class="currentFields" id="editCurrentFields"></div>
+        <div class="addFieldSelect">
+          <select id="newFieldList">
+          </select>
+          <button class="addField" id="addField">+</button>
+        </div>
+        <div class="overlayButtons">
+          <button id="closeEditOverlay">Cancel</button>
+          <button id="saveEditOverlay">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>  
+</body>
+
 </html>

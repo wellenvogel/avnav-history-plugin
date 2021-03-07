@@ -131,6 +131,21 @@ console.log("history main loaded");
         .catch(function(error){alert(error)});
     }
 
+    function createCurrentField(value,className,removeCb){
+        let fe=document.createElement('div');
+        fe.classList.add(className)
+        let cb=document.createElement('button');
+        cb.classList.add('removeField')
+        cb.setAttribute('data-value',value);
+        cb.addEventListener('click',removeCb)
+        cb.textContent="-";
+        fe.appendChild(cb);
+        let lb=document.createElement('span');
+        lb.classList.add('label');
+        lb.textContent=value;
+        fe.appendChild(lb);
+        return fe;
+    }
     function createFieldSelector(value,color,className){
         let fe=document.createElement('div');
         fe.classList.add(className)
@@ -173,12 +188,158 @@ console.log("history main loaded");
         l.appendChild(i);
         return l;
     }
+    let closeOverlayFromButton=function(btEvent){
+        let target=btEvent.target;
+        while (target && target.parentElement){
+            target=target.parentElement;
+            if (target.classList.contains('overlayFrame')){
+                showHideOverlay(target,false);
+                return;
+            }
+        }
+    }
+    let showHideOverlay=function(id,show){
+        let ovl=id;
+        if (typeof(id) === 'string'){
+            ovl=document.getElementById(id);
+        }
+        if (!ovl) return;
+        ovl.style.visibility=show?'unset':'hidden';
+        return ovl;
+    }
+    let currentEditableFields=[];
+    let saveSettings=function(ev){
+        //TODO: checks
+        let storeKeys=[];
+        let sensorNames=[];
+        currentEditableFields.forEach(function(field){
+            if (field.match(/^gps\./)){
+                storeKeys.push(field);
+            }
+            else{
+                sensorNames.push(field);
+            }
+        });
+        let nv={
+            storeKeys:storeKeys.join(','),
+            sensorNames:sensorNames.join(',')
+        }
+        settingsParam.forEach(function(p){
+            let el=document.getElementById('settings_'+p);
+            if (el) nv[p]=el.value;
+        })
+        let url='api/saveSettings?';
+        for (let k in nv){
+            url+=k+"="+encodeURIComponent(nv[k])+"&";
+        }
+        fetch(url)
+        .then(function(r){return r.json()})
+        .then(function(data){
+            if (data.status !== 'OK') {
+                alert(data.status);
+                return;
+            }
+            showHideOverlay('editOverlay',false);
+            window.setTimeout(function(){
+                window.location.href=window.location.href;
+            },2000);
+        })
+        .catch(function(e){alert(e)});
+    }
+    let showHideNewField=function(name,show){
+        let fieldList=document.getElementById('newFieldList');
+        for (let i=0;i<fieldList.children.length;i++){
+            if (fieldList.children[i].value === name){
+                fieldList.children[i].style.display=show?'unset':'none';
+            }
+        }
+        if (!show) fieldList.selectedIndex=-1;
+    }
+    let removeField=function(ev){
+        let current=ev.target;
+        let name=current.getAttribute('data-value');
+        while (current && ! current.classList.contains('existingField')){
+            current=current.parentElement;
+        }
+        if (current && current.classList.contains('existingField')){
+            current.parentElement.removeChild(current);
+        }
+        let idx=currentEditableFields.indexOf(name);
+        if (idx >= 0) currentEditableFields.splice(idx,1);
+        showHideNewField(name,true);
+    }
+    let settingsParam=['period','storeTime'];
+    let showSettings=function(){
+        showHideOverlay('editOverlay',true);
+        fetch('api/status')
+            .then(function(resp){return resp.json()})
+            .then(function(data){
+                let frame=document.getElementById('editCurrentFields');
+                if (! frame) return;
+                frame.textContent='';
+                currentEditableFields=data.fields;
+                data.fields.forEach(function(field){
+                    let el=createCurrentField(field,'existingField',removeField);
+                    frame.appendChild(el);
+
+                })
+                settingsParam.forEach(function(p){
+                    let el=document.getElementById("settings_"+p);
+                    if (el) el.value=data[p];
+                });
+                fetch('api/listKeys')
+                    .then(function(resp){return resp.json()})
+                    .then(function(data){
+                        let target=document.getElementById('newFieldList');
+                        target.textContent='';
+                        data.data.forEach(function(key){
+                            let o=document.createElement('option');
+                            o.value=key;
+                            o.textContent=key;
+                            if (currentEditableFields.indexOf(key)>=0){
+                                o.style.display='none';
+                            }
+                            target.appendChild(o);
+                        })
+                    });
+            })
+            .catch(function(e){alert(e)})
+    }
+    let addField=function(){
+        let selector=document.getElementById('newFieldList');
+        if (selector.selectedIndex < 0) return;
+        let field=selector.options[selector.selectedIndex].value;
+        let frame=document.getElementById('editCurrentFields');
+        if (currentEditableFields.indexOf(field)>=0) return;
+        frame.appendChild(createCurrentField(field,'existingField',removeField));
+        currentEditableFields.push(field);
+        showHideNewField(field,false);
+    }
+    let buttonActions={
+        closeEditOverlay: closeOverlayFromButton,
+        saveEditOverlay: saveSettings,
+        start: fillChart,
+        reload: function(){window.location.href=window.location.href},
+        settings: showSettings,
+        addField: addField
+
+    }
 
     window.addEventListener('load',function(){
         if (! window[NAME] || ! window[NAME].HistoryChart){
             let el=document.getElementById('#chart');
             el.textContent("Module not correctly loaded");
             return;
+        }
+        let buttons=document.querySelectorAll('button')
+        for (let i=0;i<buttons.length;i++){
+            let bt=buttons[i];
+            let handler=buttonActions[bt.getAttribute('id')]||
+                buttonActions[bt.getAttribute('name')];
+            if (handler){
+                bt.addEventListener('click',handler);
+            }    
+
         }
         HistoryChart=new window[NAME].HistoryChart('#chart');
         this.fetch('api/status')
@@ -203,18 +364,6 @@ console.log("history main loaded");
                 }
                 document.querySelector('input[name="hour"]:first-of-type').checked=true;
                 document.querySelector('input[name="dtype"]:first-of-type').checked=true;
-                let b=document.getElementById('start')
-                if (b){
-                    b.addEventListener('click',function(){
-                        fillChart();
-                    })
-                }
-                b=document.getElementById('reload')
-                if (b){
-                    b.addEventListener('click',function(){
-                        window.location.href=window.location.href;
-                    })
-                }
                 let colorIndex=4;
                 if (data.fields){
                     let selectorList=document.getElementById('selectors');
@@ -225,11 +374,15 @@ console.log("history main loaded");
                         selectorList.appendChild(fs);
                     }
                 }
+                if (! data.canEdit){
+                    let bt=document.getElementById('settings');
+                    if (bt) bt.style.display='none';
+                }
                 if (fetchSettings()){
                     fillChart();
                 }
             })
-            .catch(function(error){alert(error);})
+            .catch(function(error){alert(error);})  
         window.addEventListener('resize',function(){
             window.setTimeout(fillChart,100);
         })
