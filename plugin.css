@@ -3,6 +3,7 @@
 }
 .HistoryWidget .chartFrame {
     flex: 1;
+    min-height: 3em;
 }
 .HistoryWidget text.unit {
     font-size: 1rem !important;

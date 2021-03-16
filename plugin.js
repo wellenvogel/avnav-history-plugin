@@ -95,33 +95,74 @@ fileref.setAttribute("type","text/javascript");
 fileref.setAttribute("src", AVNAV_BASE_URL+"/historychart.js");
 fileref.addEventListener('load', function () {
     let statusUrl = AVNAV_BASE_URL + "/api/status";
-    fetch(statusUrl)
-        .then(function (resp) {
-            return resp.json()
+    let data=undefined;
+    let lastQuery=undefined;
+    let queryPeriod=3000;
+    const fetchData=function(){
+        return new Promise(function(resolve,reject){
+            let now=(new Date()).getTime();
+            if (lastQuery !== undefined && (lastQuery+queryPeriod) >= now){
+                resolve(data);
+            }
+            fetch(statusUrl)
+            .then(function (resp) {
+                return resp.json()
+            })
+            .then(function (jsdata) {
+                data=jsdata;
+                lastQuery=now;
+                resolve(data);
+            })
+            .catch(function(error){reject(error)});
+        });
+    };
+    const getFormatters = function () {
+        let formatters = [];
+        if (window[chartHandlerName] && window[chartHandlerName].HistoryFormatter) {
+            for (let f in window[chartHandlerName].HistoryFormatter) {
+                formatters.push(f);
+            }
+        }
+        if (formatters.length < 1) formatters.push("default");
+        return formatters;
+    }
+    const getFields = function(){
+        return new Promise(function(resolve,reject){
+            fetchData()
+            .then(function(fetched){
+                resolve(fetched.fields);
+            })
+            .catch(function(e){reject(e)});
         })
+    }
+    const hoursFromData = function (data) {
+        let hours = [];
+        let num = 5;
+        for (let i = num; i >= 1; i--) {
+            hours.push(Math.ceil(i * data.storeTime / num) + "");
+        }
+        return hours;
+    }
+    const getHours = function(){
+        return new Promise(function(resolve,reject){
+            fetchData()
+            .then(function(fetched){
+                resolve(hoursFromData(fetched));
+            })
+            .catch(function(e){reject(e)});
+        })
+    }
+    fetchData()
         .then(function (data) {
-            if (!data.fields || data.fields.length < 1) {
-                window.avnav.api.showToast("no fields for history");
-                return;
-            }
-            let formatters = [];
-            if (window[chartHandlerName] && window[chartHandlerName].HistoryFormatter) {
-                for (let f in window[chartHandlerName].HistoryFormatter) {
-                    formatters.push(f);
-                }
-            }
-            if (formatters.length < 1) formatters.push("default");
-            let hours = [];
-            let num = 5;
-            for (let i = num; i >= 1; i--) {
-                hours.push(Math.ceil(i * data.storeTime / num)+"");
-            }
+            let allowPromise=window.avnav.api.getAvNavVersion && window.avnav.api.getAvNavVersion() >= 20210316;
+            let fields=allowPromise?getFields:data.fields;
+            let hours=allowPromise?getHours:hoursFromData(data);
             let widgetParameters = {
                 formatter: false,
                 value: false,
-                fieldName: {type: 'SELECT', default: data.fields[0], list: data.fields},
+                fieldName: {type: 'SELECT', default: data.fields[0], list: fields},
                 color: {type: 'COLOR', default: '#ffffff'},
-                fieldFormatter: {type: 'SELECT', default: 'default', list: formatters},
+                fieldFormatter: {type: 'SELECT', default: 'default', list: getFormatters()},
                 hours: {type: 'SELECT', default: hours[0], list: hours},
                 showLines: {type: 'BOOLEAN', default: false}
             };
