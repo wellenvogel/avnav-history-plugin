@@ -490,6 +490,18 @@ class Plugin:
       raise Exception("missing parameter %s"%name)
     return data[0]
 
+  def _appendKeys(self,keylist,storeData,prefix=None):
+    BLACKLIST=['tag','source','mode','updatealarm','updateleg','updateroute']
+    if prefix is None:
+      prefix='gps'
+    else:
+      BLACKLIST=[]
+    for k,v in storeData.items():
+      if type(v) is not dict:
+        if k not in BLACKLIST:
+          keylist.append(prefix+'.'+k)
+      else:
+        self._appendKeys(keylist,v,prefix+'.'+k)
   def handleApiRequest(self,url,handler,args):
     """
     handler for API requests send from the JS
@@ -543,13 +555,9 @@ class Plugin:
       }
 
     if url == 'listKeys':
-      BLACKLIST=['tag','source','mode','updatealarm','updateleg','updateroute']
       storeData=self.api.getDataByPrefix('gps')
       keylist=[]
-      for k,v in storeData.items():
-        if type(v) is not dict:
-          if k not in BLACKLIST:
-            keylist.append('gps.'+k)
+      self._appendKeys(keylist,storeData)
       return {
         'status':'OK',
         'data':keylist
