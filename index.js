@@ -174,7 +174,12 @@ console.log("history main loaded");
         fe.appendChild(cb);
         let lb=document.createElement('span');
         lb.classList.add('label');
-        lb.textContent=value;
+        let ct='';
+        value.split('.').forEach(function(part){
+            if (ct !== '') ct+='.<wbr>';
+            ct+=part;
+        })
+        lb.innerHTML=ct;
         fe.appendChild(lb);
         return fe;
     }

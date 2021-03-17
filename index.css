@@ -36,6 +36,9 @@ text {
     flex: 1;
     min-height: 15em;
 }
+.selectorFrame{
+    max-width: 25em;
+}
 #selectors {
     padding-bottom: 1em;
     border-bottom: 1px solid grey;
@@ -58,10 +61,14 @@ text {
     display: flex;
     align-items: center;
 }
+.fieldSelector .label{
+    overflow: hidden;
+}
 input.colorSelect {
     width: 3em;
     height: 2em;
     margin: 0.3em;
+    flex-shrink: 0;
 }
 select.formatterSelect {
     height: 2em;
@@ -177,5 +184,8 @@ button#settings{
     }
     .startSelect label {
         display: inline-block;
+    }
+    .selectorFrame{
+        max-width: unset;
     }
 }
