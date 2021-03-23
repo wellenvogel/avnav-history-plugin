@@ -32,49 +32,30 @@ You can use the plugin in 2 different ways.
     sudo dpkg -i avnav-history-plugin...._all.deb
     ```
 
-Configuration (Server)
--------------
-You need to configure the the values you would like to store, the interval and the store time.
-```
-<AVNPluginHandler>
-  <user-history sensorNames="Barometer,TempAir" storeKeys="gps.windSpeed" period="30"/>
-</AVNPluginHandler>
-```
-Just consider that typically there will be some other entries below the AVNPluginHandler already - just take care to only have one AVNPluginHandler.
-In the example the plugin was downloaded as zip and installed into /home/pi/avnav/data/plugins/history.
-I configured the Transducer values Barometer and TempAir to be recorded from XDR NMEA messages and the value gps.windSpeed from the internal store.
-With this configuration the values are written every 30s to the history and kept for at most 48h hours. 
-Data being received within the 30s interval is accumulated and the average is stored.
-The fetching from the internal store will be done at 1/10 of the configured interval - values being accumulated again.
-If you installed the package you would need to use
-```
-<AVNPluginHandler>
-  <system-history sensorNames="Barometer,TempAir" storeKeys="gps.windSpeed" period="30" storeTime="48"/>
-</AVNPluginHandler>
-```
-
-The following items can be configured:
-
-Name | Default | Description
------|---------|----------
-sensorNames | -empty- | comma separated transducer names from [XDR](https://gpsd.gitlab.io/gpsd/NMEA.html#_xdr_transducer_measurement) records you would like to store
-storeKeys | -empty- | keys from the AvNav internal store. You can get a list from the [Layout Editor](https://www.wellenvogel.net/software/avnav/docs/hints/layouts.html?lang=en#h2:LayoutEditor) - just omitting the "nav."
-period | 30 | storage interval in seconds
-storeTime | 48 | time (in hours) to keep the data
-enabled | true | if set to false the plugin is disabled
-pollingInterval | 1/10 of period | if set this is the interval used to poll the internal data for values configured with storeKeys
-
-You must at least configure one sensorName or one storeKey - otherwise the plugin will simply stop.
-
 User App
 --------
 The plugin registers a [User App](https://www.wellenvogel.net/software/avnav/docs/userdoc/addonconfigpage.html?lang=en#h1:ConfigurationofUserApps)
 that provides a simple graphical display of the collected data using [d3.js](https://d3js.org/) - see screenshot.
-You can select the values to be displayed and the number of hours backwards from now you would like to see.
+You can select the values to be displayed and the number of hours backwards from now you would like to see. Using the edit button you
+can configure the plugin.
 Additionally you can select the formatter to be used to display the values.
 There is a tooltip showing the current value once you hover/click near a curve.
 The implementation is some [html code](index.html) and some java script code in [index.js](index.js) and 
 [historychart.js](historychart.js). 
+
+Configuration (Server)
+-------------
+Starting with avnav 20210322 the configuration is included in AvNav and the plugin UI. Just use the edit button from within the plugin UI.
+
+![ScreenShot](doc/Screenshot_config.png)
+
+You need to configure the the values you would like to store, the interval and the store time.
+When selecting values to be store you will get a list of all currently available values in the internal Store of AvNav (so be sure that the values you would like to inlcude are currently available).
+Transducer values from XDR records will be visible with gps.transducers.xxxx.
+With the example configuration the values are written every 15s to the history and kept for at most 48h hours. 
+Data being received within the 15s interval is accumulated and the average is stored.
+The fetching from the internal store will be done at 1/10 of the configured interval - values being accumulated again.
+
 
 Widget
 ------
