@@ -70,7 +70,7 @@ let HistoryWidget={
                         })
                         .catch(function(error){})
                 },timerInterval*1000);
-                chartHandler.createChart(data,[fieldDef],props.showLines)
+                chartHandler.createChart(data,[fieldDef],props.showLines,props.yMin,props.yMax)
 
             })
             .catch(function(error){console.log(error)});
@@ -161,9 +161,11 @@ fileref.addEventListener('load', function () {
                 formatter: false,
                 value: false,
                 fieldName: {type: 'SELECT', default: data.fields[0], list: fields},
-                color: {type: 'COLOR', default: '#ffffff'},
+                color: {type: 'COLOR', default: '#000000'},
                 fieldFormatter: {type: 'SELECT', default: 'default', list: getFormatters()},
                 hours: {type: 'SELECT', default: hours[0], list: hours},
+                yMin: {type: 'STRING', default: ''},
+                yMax: {type: 'STRING', default: ''},
                 showLines: {type: 'BOOLEAN', default: false}
             };
 

@@ -185,7 +185,10 @@ console.log("history diagram loaded");
      * @param fields the field definitions (name,color,formatter,enabled)
      * @param opt_showLines if true - show lines instead of points
      */
-    HistoryChart.prototype.createChart=function(serverData,fields,opt_showLines){
+    HistoryChart.prototype.createChart=function(serverData,fields,opt_showLines,opt_yMin, opt_yMax){
+	if (opt_yMin===undefined) opt_yMin="";
+	if (opt_yMax===undefined) opt_yMax="";
+	let yaxisSingle = (((opt_yMin != "") && (opt_yMax != "")) || (fields.length === 1)) ? true : false;
         let self=this;
         let data=serverData.data;
         this.currentData=data;
@@ -207,10 +210,12 @@ console.log("history diagram loaded");
                  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
         //compute the room we need for the y axis
         let addLeft=0;
-        fields.forEach(function(field){
-            if (field.ownAxis === undefined || field.ownAxis) addLeft+=yaxiswidth;
-        })
-        if (addLeft >= yaxiswidth) addLeft-=yaxiswidth;
+        if (!yaxisSingle){
+            fields.forEach(function(field){
+                if (field.ownAxis === undefined || field.ownAxis) addLeft+=yaxiswidth;
+            })
+            if (addLeft >= yaxiswidth) addLeft-=yaxiswidth;
+	}
         this.xScale=d3.scaleTime()
                 .domain(d3.extent(data,function(d){return d[0]*1000}))
                 .range([addLeft,width]);
@@ -231,14 +236,14 @@ console.log("history diagram loaded");
                     }
                 ), vf);
                 currentY = d3.scaleLinear()
-                    .domain([ext[0] >= 0 ? 0 : ext[0], ext [1]]).nice()
+                    .domain([opt_yMin != "" ? opt_yMin : ext[0], opt_yMax != "" ? opt_yMax : ext[1]]).nice()
                     .range([height, 0]);
                 svg.append("g")
                     .attr("transform", "translate(" + leftMargin + ",0)")
-                    .attr("stroke", field.color)
+                    .attr("stroke", yaxisSingle ? "#000000" : field.color)
                     .call(d3.axisLeft(currentY));
                 let unit = self.getYtitle(field);
-                if (unit) {
+                if (unit && !yaxisSingle) {
                     svg.append('text')
                         .attr('class','unit')
                         .attr('text-anchor', 'end')
@@ -247,7 +252,7 @@ console.log("history diagram loaded");
                         .attr('fill', field.color)
                         .text(unit)
                 }
-                leftMargin += yaxiswidth;
+                if (!yaxisSingle) {leftMargin += yaxiswidth};
             }
             let gr;
             if (opt_showLines) {
@@ -312,7 +317,7 @@ console.log("history diagram loaded");
     //register our formatters
     //we do this at a global level to give the user a change to add its own
     window[NAME].HistoryFormatter.hectoPascal={unit:'hPa',f:function(v){return v/100}};
-    window[NAME].HistoryFormatter.celsius={unit:'°',f:function(v){return v-273.15}};
+    window[NAME].HistoryFormatter.celsius={unit:'°C',f:function(v){return v-273.15}};
     window[NAME].HistoryFormatter.knots={unit:'kn',f:function(v){return v*3600.0/1852.0}};
     window[NAME].HistoryFormatter.default=function(v){return v};
 })();

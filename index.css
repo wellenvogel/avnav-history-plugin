@@ -133,6 +133,15 @@ button#settings{
     width: 8em;
     opacity: 0.6;
 }
+.inputY .label {
+    padding: 0.2em;
+    font-size:1em;
+    margin-bottom:0.5em
+}
+.inputY .label .yAxisLimit {
+    font-size:1em;
+    width: 6em;
+}
 
 
 

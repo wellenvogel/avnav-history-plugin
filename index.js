@@ -32,6 +32,8 @@ console.log("history main loaded");
     function readSettings(){
         let hours=document.querySelector('input[name="hour"]:checked').value;
         let dtype=document.querySelector('input[name="dtype"]:checked').value;
+        let yMin = document.getElementById('yMin').value;
+        let yMax = document.getElementById('yMax').value;
         let fieldCb=document.querySelectorAll('.fieldSelector input[type=checkbox]');
         let fields=[];
         for (let i = 0; i < fieldCb.length; i++) {
@@ -50,7 +52,7 @@ console.log("history main loaded");
                 }
             );
         }
-        return {hours:hours,fields:fields,type:dtype};
+        return {hours:hours,fields:fields,type:dtype,yMin:yMin,yMax:yMax};
     }
     let SETTINGSNAME='avnav-history-plugin';
     function storeSettings(){
@@ -80,6 +82,8 @@ console.log("history main loaded");
             let settings=JSON.parse(raw);
             setRadio('hours',settings.hours);
             setRadio('dtype',settings.type);
+            document.getElementById('yMin').value=settings.yMin;
+            document.getElementById('yMax').value=settings.yMax;
             hasMatching=false;
             let es=document.querySelectorAll('.fieldSelector');
             for (let i=0;i<es.length;i++){
@@ -114,6 +118,14 @@ console.log("history main loaded");
             if (f.selected || f.selected === undefined) fields.push(f);
         });
         let hours=settings.hours;
+        let yMin=settings.yMin;
+        let yMax=settings.yMax;
+        if ((yMin != "") && (yMax != "")){
+           if (parseInt(yMax) <= parseInt(yMin)) {
+               yMin = "";
+               yMax = ""
+           }
+        }
         if (fields.length < 1){
             HistoryChart.removeChart();
             return;
@@ -126,7 +138,7 @@ console.log("history main loaded");
         .then(function(resp){return resp.json()})
         .then(function(data){
             HistoryChart.removeChart();
-            HistoryChart.createChart(data,fields,settings.type === 'line');
+            HistoryChart.createChart(data,fields,settings.type === 'line', yMin, yMax);
         })
         .catch(function(error){alert(error)});
     }
