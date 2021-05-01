@@ -77,6 +77,18 @@ select.formatterSelect {
     border-bottom: 1px solid grey;
     margin-bottom: 0.5em;
 }
+.yMinMax {
+    margin: 0.3em;
+    display: flex;
+    flex-direction: row;
+}
+.yMinMax .label {
+    flex-shrink: 0;
+    margin-right: 0.2em;
+}
+.yMinMax input{
+    width: 6em;
+}
 button {
     width: 6em;
     margin: 0.3em;
@@ -132,15 +144,6 @@ button#settings{
 .inputRow .label {
     width: 8em;
     opacity: 0.6;
-}
-.inputY .label {
-    padding: 0.2em;
-    font-size:1em;
-    margin-bottom:0.5em
-}
-.inputY .label .yAxisLimit {
-    font-size:1em;
-    width: 6em;
 }
 
 

@@ -184,11 +184,13 @@ console.log("history diagram loaded");
      * @param serverData a json object having the values in data (order of values must match the order in fields)
      * @param fields the field definitions (name,color,formatter,enabled)
      * @param opt_showLines if true - show lines instead of points
+     * @param opt_yMin if set and not empty use this as the min value for the y axis
+     * @param opt_yMax if set and not empty use this as the max value for the y axis
      */
-    HistoryChart.prototype.createChart=function(serverData,fields,opt_showLines,opt_yMin, opt_yMax){
-	if (opt_yMin===undefined) opt_yMin="";
-	if (opt_yMax===undefined) opt_yMax="";
-	let yaxisSingle = (((opt_yMin != "") && (opt_yMax != "")) || (fields.length === 1)) ? true : false;
+    HistoryChart.prototype.createChart = function (serverData, fields, opt_showLines, opt_yMin, opt_yMax) {
+        if (opt_yMin === undefined) opt_yMin = "";
+        if (opt_yMax === undefined) opt_yMax = "";
+        let yaxisSingle = (((opt_yMin !== "") && (opt_yMax !== "")) || (fields.length === 1));
         let self=this;
         let data=serverData.data;
         this.currentData=data;
@@ -215,7 +217,7 @@ console.log("history diagram loaded");
                 if (field.ownAxis === undefined || field.ownAxis) addLeft+=yaxiswidth;
             })
             if (addLeft >= yaxiswidth) addLeft-=yaxiswidth;
-	}
+	    }
         this.xScale=d3.scaleTime()
                 .domain(d3.extent(data,function(d){return d[0]*1000}))
                 .range([addLeft,width]);
@@ -236,7 +238,7 @@ console.log("history diagram loaded");
                     }
                 ), vf);
                 currentY = d3.scaleLinear()
-                    .domain([opt_yMin != "" ? opt_yMin : ext[0], opt_yMax != "" ? opt_yMax : ext[1]]).nice()
+                    .domain([opt_yMin !== "" ? opt_yMin : ext[0], opt_yMax !== "" ? opt_yMax : ext[1]]).nice()
                     .range([height, 0]);
                 svg.append("g")
                     .attr("transform", "translate(" + leftMargin + ",0)")
@@ -252,7 +254,7 @@ console.log("history diagram loaded");
                         .attr('fill', field.color)
                         .text(unit)
                 }
-                if (!yaxisSingle) {leftMargin += yaxiswidth};
+                if (!yaxisSingle) {leftMargin += yaxiswidth}
             }
             let gr;
             if (opt_showLines) {
