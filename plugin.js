@@ -106,7 +106,13 @@ fileref.addEventListener('load', function () {
             }
             fetch(statusUrl)
             .then(function (resp) {
-                return resp.json()
+                const contentType = resp.headers.get("content-type");
+                if (contentType && contentType.indexOf("application/json") !== -1) {
+                    return resp.json()
+                }
+                else{
+                    resolve(null);
+                }
             })
             .then(function (jsdata) {
                 data=jsdata;
@@ -154,6 +160,7 @@ fileref.addEventListener('load', function () {
     }
     fetchData()
         .then(function (data) {
+            if (data == null) return;
             let allowPromise=window.avnav.api.getAvNavVersion && window.avnav.api.getAvNavVersion() >= 20210316;
             let fields=allowPromise?getFields:data.fields;
             let hours=allowPromise?getHours:hoursFromData(data);

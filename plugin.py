@@ -208,7 +208,6 @@ class Plugin:
     """
     self.api = api # type: AVNApi
     #we register an handler for API requests
-    self.api.registerRequestHandler(self.handleApiRequest)
     self.xdrNames=None
     self.dataKeys=None
     self.storeKeys=None
@@ -282,6 +281,7 @@ class Plugin:
   STOP_WAIT=2
 
   def run(self):
+    self.api.registerRequestHandler(self.handleApiRequest)
     startSequence=self.startSequence
     self.api.registerUserApp(self.api.getBaseUrl()+'/index.html',os.path.join('icons','show_chart.svg'),'History')
     while startSequence == self.startSequence:
