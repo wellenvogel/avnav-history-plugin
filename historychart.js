@@ -242,7 +242,7 @@ console.log("history diagram loaded");
                     .range([height, 0]);
                 svg.append("g")
                     .attr("transform", "translate(" + leftMargin + ",0)")
-                    .attr("stroke", yaxisSingle ? "#000000" : field.color)
+                    .attr("stroke", yaxisSingle ? "" : field.color)
                     .call(d3.axisLeft(currentY));
                 let unit = self.getYtitle(field);
                 if (unit && !yaxisSingle) {
