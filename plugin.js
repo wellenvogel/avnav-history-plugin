@@ -141,14 +141,14 @@ fileref.addEventListener('load', function () {
             .catch(function(e){reject(e)});
         })
     }
+    
     const hoursFromData = function (data) {
-        let hours = [];
-        let num = 5;
-        for (let i = num; i >= 1; i--) {
-            hours.push(Math.ceil(i * data.storeTime / num) + "");
-        }
-        return hours;
-    }
+        const allHours = [0.25, 0.5, 1, 2, 4, 8, 12, 24, 48, 72]; 
+        const truncatedHours = allHours.filter(hour => hour < data.storeTime); 
+        truncatedHours.push(data.storeTime); 
+        return truncatedHours.map(String); 
+    };
+
     const getHours = function(){
         return new Promise(function(resolve,reject){
             fetchData()
