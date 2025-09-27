@@ -362,12 +362,10 @@ console.log("history main loaded");
         this.fetch('api/status')
             .then(function(resp){return resp.json()})
             .then(function(data){
-                let hours=data.storeTime;
-                let numHours=5;
-                let selectHours=[];
-                for (let i=numHours;i>=1;i--){
-                    selectHours.push(Math.ceil(i*hours/numHours));
-                }
+                const allHours = [0.25, 0.5, 1, 2, 4, 8, 12, 24, 48, 72]; 
+                let selectHours = allHours.filter(hour => hour < data.storeTime); 
+                selectHours.push(data.storeTime); 
+        
                 let hsParent=document.getElementById('hourSelect');
                 for (let i=0;i<selectHours.length;i++){
                     let hs=createRadio('hour',selectHours[i]+"h",selectHours[i],"hourSelector");
