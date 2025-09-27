@@ -49,7 +49,7 @@ let HistoryWidget={
                 };
                 let fieldDefs=[fieldDef];
 
-                if (props.movingAverage) {
+                if (props.movingAverage && props.averagingWindow > 1){
                     HistoryWidget.addMovingAverage(data, props.averagingWindow);
                     let fieldDefAvg={
                         name:props.fieldName + "_avg(" + props.averagingWindow + ")",
