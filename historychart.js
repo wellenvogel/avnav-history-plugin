@@ -275,6 +275,7 @@ console.log("history diagram loaded");
                             return currentY(vf(d))
                         })
                     )
+                    .attr("stroke-dasharray", field.dashed ? "6,3" : null); 
             } else {
                 gr = svg.append("g")
                     .selectAll('dot')
