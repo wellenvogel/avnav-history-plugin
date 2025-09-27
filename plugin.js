@@ -106,31 +106,31 @@ let HistoryWidget={
      * @returns 
      */
     addMovingAverage:function(data, windowSize) {
-    const movingAverageData = this.calcMovingAverage(data.data, 1, windowSize);
-    data.data = movingAverageData;
-    const avgFieldName = `${data.fields[0]}_average(${windowSize})`;
-    data.fields.push(avgFieldName);
-    return data;
+        const movingAverageData = this.calcMovingAverage(data.data, 1, windowSize);
+        data.data = movingAverageData;
+        const avgFieldName = `${data.fields[0]}_average(${windowSize})`;
+        data.fields.push(avgFieldName);
+        return data;
     },
 
     calcMovingAverage:function(data, valueIndex, windowSize) {
-    if (!Array.isArray(data) || data.length === 0) return [];
-    if (windowSize <= 0) throw new Error('Window size must be greater than 0');
-    if (valueIndex < 0 || valueIndex >= data[0].length) throw new Error('Invalid value index');
-    const result = [];
-    let sum = 0;
-    for (let i = 0; i < data.length; i++) {
-        sum += data[i][valueIndex];
-        if (i >= windowSize) {
-            sum -= data[i - windowSize][valueIndex];
+        if (!Array.isArray(data) || data.length === 0) return [];
+        if (windowSize <= 0) throw new Error('Window size must be greater than 0');
+        if (valueIndex < 0 || valueIndex >= data[0].length) throw new Error('Invalid value index');
+        const result = [];
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+            sum += data[i][valueIndex];
+            if (i >= windowSize) {
+                sum -= data[i - windowSize][valueIndex];
+            }
+            const count = i < windowSize ? i + 1 : windowSize;
+            const avg = sum / count;
+            let newRow = data[i].slice() 
+            newRow.push(avg);
+            result.push(newRow);
         }
-        const count = i < windowSize ? i + 1 : windowSize;
-        const avg = sum / count;
-        let newRow = data[i].slice() 
-        newRow.push(avg);
-        result.push(newRow);
-    }
-    return result;
+        return result;
     }
 }
 
