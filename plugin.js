@@ -219,9 +219,9 @@ fileref.addEventListener('load', function () {
                 hours: {type: 'SELECT', default: hours[0], list: hours},
                 yMin: {type: 'STRING', default: ''},
                 yMax: {type: 'STRING', default: ''},
-                showLines: {type: 'BOOLEAN', default: false},
-                movingAverage: {type: 'BOOLEAN', default: false, description: 'adds a line with a moving average'},
-                averagingWindow: {type: 'NUMBER', default: 10, description: 'window size for moving average (only if movingAverage is set)'}
+                showLines: {name: 'show lines', type: 'BOOLEAN', default: false},
+                movingAverage: {name: 'show average', type: 'BOOLEAN', default: false, description: 'adds a line with a moving average'},
+                averagingWindow: {name: 'window size', type: 'NUMBER', default: 10, description: 'window size for moving average (only if movingAverage is set)'}
             };
 
             window.avnav.api.registerWidget(HistoryWidget, widgetParameters);
