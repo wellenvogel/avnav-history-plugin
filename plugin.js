@@ -47,6 +47,20 @@ let HistoryWidget={
                     formatter: props.fieldFormatter,
                     color: props.color
                 };
+                let fieldDefs=[fieldDef];
+
+                if (props.movingAverage && props.averagingWindow > 1){
+                    HistoryWidget.addMovingAverage(data, props.averagingWindow);
+                    let fieldDefAvg={
+                        name:props.fieldName + "_avg(" + props.averagingWindow + ")",
+                        formatter: props.fieldFormatter,
+                        color: "#0000ff",
+                        dashed: true,
+                        ownAxis: false
+                    };
+                    fieldDefs.push(fieldDefAvg);
+                }
+
                 let chart=widget.querySelector('.chartFrame');
                 if (! chart) return ;
                 self.sequence=data.sequence;
@@ -70,7 +84,7 @@ let HistoryWidget={
                         })
                         .catch(function(error){})
                 },timerInterval*1000);
-                chartHandler.createChart(data,[fieldDef],props.showLines,props.yMin,props.yMax)
+                chartHandler.createChart(data,fieldDefs,props.showLines,props.yMin,props.yMax);
 
             })
             .catch(function(error){console.log(error)});
@@ -83,10 +97,42 @@ let HistoryWidget={
             window.clearInterval(context.timer);
         }
         context.isActive=false;
+    },
+
+    /**
+     * Adds a moving average field to the data object.
+     * @param {*} data the data object as retrieved from the server 
+     * @param {*} windowSize size of elements to use for moving average
+     * @returns 
+     */
+    addMovingAverage:function(data, windowSize) {
+        const movingAverageData = this.calcMovingAverage(data.data, 1, windowSize);
+        data.data = movingAverageData;
+        const avgFieldName = `${data.fields[0]}_average(${windowSize})`;
+        data.fields.push(avgFieldName);
+        return data;
+    },
+
+    calcMovingAverage:function(data, valueIndex, windowSize) {
+        if (!Array.isArray(data) || data.length === 0) return [];
+        if (windowSize <= 0) throw new Error('Window size must be greater than 0');
+        if (valueIndex < 0 || valueIndex >= data[0].length) throw new Error('Invalid value index');
+        const result = [];
+        let sum = 0;
+        for (let i = 0; i < data.length; i++) {
+            sum += data[i][valueIndex];
+            if (i >= windowSize) {
+                sum -= data[i - windowSize][valueIndex];
+            }
+            const count = i < windowSize ? i + 1 : windowSize;
+            const avg = sum / count;
+            let newRow = data[i].slice() 
+            newRow.push(avg);
+            result.push(newRow);
+        }
+        return result;
     }
-
 }
-
 
 
 
@@ -141,14 +187,14 @@ fileref.addEventListener('load', function () {
             .catch(function(e){reject(e)});
         })
     }
+    
     const hoursFromData = function (data) {
-        let hours = [];
-        let num = 5;
-        for (let i = num; i >= 1; i--) {
-            hours.push(Math.ceil(i * data.storeTime / num) + "");
-        }
-        return hours;
-    }
+        const allHours = [0.25, 0.5, 1, 2, 4, 8, 12, 24, 48, 72]; 
+        const truncatedHours = allHours.filter(hour => hour < data.storeTime); 
+        truncatedHours.push(data.storeTime); 
+        return truncatedHours.map(String); 
+    };
+
     const getHours = function(){
         return new Promise(function(resolve,reject){
             fetchData()
@@ -173,7 +219,9 @@ fileref.addEventListener('load', function () {
                 hours: {type: 'SELECT', default: hours[0], list: hours},
                 yMin: {type: 'STRING', default: ''},
                 yMax: {type: 'STRING', default: ''},
-                showLines: {type: 'BOOLEAN', default: false}
+                showLines: {name: 'show lines', type: 'BOOLEAN', default: false},
+                movingAverage: {name: 'show average', type: 'BOOLEAN', default: false, description: 'adds a line with a moving average'},
+                averagingWindow: {name: 'window size', type: 'NUMBER', default: 10, description: 'window size for moving average (only if movingAverage is set)'}
             };
 
             window.avnav.api.registerWidget(HistoryWidget, widgetParameters);

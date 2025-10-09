@@ -224,7 +224,8 @@ console.log("history diagram loaded");
         svg.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(this.xScale)
-                .tickFormat(d3.timeFormat("%d/%Hh"))
+            .ticks(6)
+            .tickFormat(d3.timeFormat("%d/%H:%M"))
             );
         let currentY;
         let leftMargin=0;
@@ -274,6 +275,7 @@ console.log("history diagram loaded");
                             return currentY(vf(d))
                         })
                     )
+                    .attr("stroke-dasharray", field.dashed ? "6,3" : null); 
             } else {
                 gr = svg.append("g")
                     .selectAll('dot')
