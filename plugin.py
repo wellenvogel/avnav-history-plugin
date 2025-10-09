@@ -390,7 +390,7 @@ class Plugin:
         if len(data) > 0:
           for line in data:
             #$--XDR,a,x.x,a,c--c, ..... *hh<CR><LF>
-            line=re.sub("\*.*","",line.rstrip())
+            line=re.sub(r"\*.*","",line.rstrip())
             fields=line.split(",")
             lf=len(fields)
             i=1
