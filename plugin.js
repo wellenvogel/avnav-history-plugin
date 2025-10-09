@@ -18,7 +18,11 @@ let HistoryWidget={
     renderHtml:function(props){
         if (this.timer) window.clearInterval(this.timer);
         this.timer=undefined;
-        return '<div class="chartFrame"></div>';
+        let style=""
+        if (props.height){
+            style="style=\"height:"+props.height+"px;min-height:"+props.height+"px;\"";
+        }
+        return '<div class="chartFrame" '+style+'></div>';
     },
     /**
      * we must "misuse" the renderCanvas here
@@ -221,7 +225,8 @@ fileref.addEventListener('load', function () {
                 yMax: {type: 'STRING', default: ''},
                 showLines: {name: 'show lines', type: 'BOOLEAN', default: false},
                 movingAverage: {name: 'show average', type: 'BOOLEAN', default: false, description: 'adds a line with a moving average'},
-                averagingWindow: {name: 'window size', type: 'NUMBER', default: 10, description: 'window size for moving average (only if movingAverage is set)'}
+                averagingWindow: {name: 'window size', type: 'NUMBER', default: 10, description: 'window size for moving average (only if movingAverage is set)'},
+                height: {name: 'height(px)',type: 'NUMBER',default:0,description:'set the widget height in px, 0 for default'}
             };
 
             window.avnav.api.registerWidget(HistoryWidget, widgetParameters);

@@ -1,6 +1,17 @@
 console.log("history diagram loaded");
 (function(){
     let NAME="avnavHistoryPlugin";
+    //https://stackoverflow.com/questions/17797437/d3-autospace-overlapping-tick-labels
+    const removeOverlappingXTicks = (axis) => {
+        let a = axis.selectAll("g.tick").nodes()
+        if (a.length <= 1) return
+        for (let i = 0, x = 0; i < a.length;) {
+            let node = a[i++]
+            let r = node.getBoundingClientRect()
+            if (r.left < x) node.parentNode.removeChild(node)
+            else x = r.right + 8
+        }
+    }
     let HistoryChart=function(element,opt_options) {
         this.useToolTip=! opt_options || (opt_options.tooltip || opt_options.tooltip === undefined);
         this.element=element;
@@ -221,12 +232,13 @@ console.log("history diagram loaded");
         this.xScale=d3.scaleTime()
                 .domain(d3.extent(data,function(d){return d[0]*1000}))
                 .range([addLeft,width]);
-        svg.append("g")
+        let xaxis=svg.append("g")
             .attr("transform", "translate(0," + height + ")")
             .call(d3.axisBottom(this.xScale)
             .ticks(6)
             .tickFormat(d3.timeFormat("%d/%H:%M"))
             );
+        removeOverlappingXTicks(xaxis);
         let currentY;
         let leftMargin=0;
         for (let idx=0;idx<fields.length;idx++) {
