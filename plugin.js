@@ -58,7 +58,7 @@ let HistoryWidget={
                     let fieldDefAvg={
                         name:props.fieldName + "_avg(" + props.averagingWindow + ")",
                         formatter: props.fieldFormatter,
-                        color: "#0000ff",
+                        color: props.averageColor,
                         dashed: true,
                         ownAxis: false
                     };
@@ -224,9 +224,10 @@ fileref.addEventListener('load', function () {
                 yMin: {type: 'STRING', default: ''},
                 yMax: {type: 'STRING', default: ''},
                 showLines: {name: 'show lines', type: 'BOOLEAN', default: false},
-                movingAverage: {name: 'show average', type: 'BOOLEAN', default: false, description: 'adds a line with a moving average'},
-                averagingWindow: {name: 'window size', type: 'NUMBER', default: 10, description: 'window size for moving average (only if movingAverage is set)'},
-                height: {name: 'height(px)',type: 'NUMBER',default:0,description:'set the widget height in px, 0 for default'}
+                movingAverage: {name: 'show average', type: 'BOOLEAN', default: false, description: 'adds a dashed line with a moving average'},
+                averageColor: {type: 'COLOR', default: "#0000ff",description: 'color for the average graph',condition:{movingAverage: true}},
+                averagingWindow: {name: 'window size', type: 'NUMBER', default: 10, description: 'window size for moving average ',condition:{movingAverage: true}},
+                height: {name: 'height(px)',type: 'NUMBER',default:0,description:'set the widget height in px, 0 for default (ignored on dashboard)'}
             };
 
             window.avnav.api.registerWidget(HistoryWidget, widgetParameters);
