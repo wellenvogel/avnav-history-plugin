@@ -9,11 +9,24 @@ let tryCreateChartHandler=function(context) {
     return context.chartHandler;
 }
 
+const findFormatter = function (name) {
+        if (window[chartHandlerName] && window[chartHandlerName].HistoryFormatter) {
+            return window[chartHandlerName].HistoryFormatter[name];
+        }
+    }
+
 let HistoryWidget={
     name: 'HistoryWidget',
     initFunction:function (context){
         tryCreateChartHandler(context);
         context.isActive=true;
+    },
+    translateFunction: function(props){
+        let fmt=findFormatter(props.fieldFormatter);
+        if (fmt && fmt.unit && ! props.unit && props.unitFromFormatter){
+            props.unit=fmt.unit;
+        }
+        return props;
     },
     renderHtml:function(props){
         if (this.timer) window.clearInterval(this.timer);
@@ -216,10 +229,12 @@ fileref.addEventListener('load', function () {
             let hours=allowPromise?getHours:hoursFromData(data);
             let widgetParameters = {
                 formatter: false,
+                formatterParameters: false,
                 value: false,
                 fieldName: {type: 'SELECT', default: data.fields[0], list: fields},
                 color: {type: 'COLOR', default: '#000000'},
                 fieldFormatter: {type: 'SELECT', default: 'default', list: getFormatters()},
+                unitFromFormatter: {type: 'BOOLEAN',default: true,description: 'use the unit from the field formatter if no unit parameter is given'},
                 hours: {type: 'SELECT', default: hours[0], list: hours},
                 yMin: {type: 'STRING', default: ''},
                 yMax: {type: 'STRING', default: ''},

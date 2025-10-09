@@ -335,6 +335,8 @@ console.log("history diagram loaded");
     window[NAME].HistoryFormatter.hectoPascal={unit:'hPa',f:function(v){return v/100}};
     window[NAME].HistoryFormatter.celsius={unit:'°C',f:function(v){return v-273.15}};
     window[NAME].HistoryFormatter.knots={unit:'kn',f:function(v){return v*3600.0/1852.0}};
+    window[NAME].HistoryFormatter.speedMs={unit:'m/s',f:function(v){return v}};
+    window[NAME].HistoryFormatter.speedKmh={unit:'km/h',f:function(v){return v*3.6}};
     window[NAME].HistoryFormatter.default=function(v){return v};
 })();
 
