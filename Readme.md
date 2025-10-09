@@ -52,7 +52,7 @@ Starting with avnav 20210322 the configuration is included in AvNav and the plug
 ![ScreenShot](doc/Screenshot_config.png)
 
 You need to configure the values to be stored, the frequency (period) and the store time.
-To select values pick from list of all currently available keys in AvNav's internal Store (so ensure that the values to inlcude are currently available).
+To select values pick from list of all currently available keys in AvNav's internal Store (so ensure that the values to include are currently available).
 Transducer values from XDR records will be visible as gps.transducers.xxxx.
 The example configuration defines the values to be written every 60s to the history and kept for up to 72h hours. 
 Data received within the 60s period are accumulated and the average is stored.
@@ -128,3 +128,18 @@ For a simple package building [NFPM](https://nfpm.goreleaser.com/) is used and s
 Additionally a [GitHub workflow](.github/workflows/createPackage.yml) has been set up to create a release and build a package whenever you push to the release branch.
 So when you fork this repository you can create a package even without a local environment.
 To trigger a package build at GitHub after forking just create a release branch and push this.
+
+
+Releases
+--------
+
+[20251009](../../releases/tag/20251009)
+
+* [#9](../../pull/9) shorter time frames and movin average for widget (adresses [#7](../../issues/7)[#3](../../issues/3))
+* add formatter for m/s and km/h
+* avoid overlapping x axis texts
+* allow to set a widget height in the layout editor
+* allow to pick the unit for the widget head from the formatter
+
+[20210525](../../releases/tag/20210525)
+
