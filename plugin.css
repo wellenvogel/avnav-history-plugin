@@ -12,3 +12,20 @@
 .HistoryWidget text{
     font-family: Verdana, Arial, sans-serif;
 }
+
+:root{
+    --plugin-history-icon: url('icons/icon.svg')
+}
+.nightMode{
+    --plugin-history-icon: url('icons/icon.svg')
+}
+/*
+set the icon url for the plugin running as user plugin
+and as system plugin
+*/
+.button.user-history-ui .icon {
+    background-image: var(--plugin-history-icon);
+}
+.button.system-history-ui .icon {
+    background-image: var(--plugin-history-icon);
+}

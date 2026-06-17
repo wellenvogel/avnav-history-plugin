@@ -283,7 +283,17 @@ class Plugin:
   def run(self):
     self.api.registerRequestHandler(self.handleApiRequest)
     startSequence=self.startSequence
-    self.api.registerUserApp(self.api.getBaseUrl()+'/index.html',os.path.join('icons','show_chart.svg'),'History')
+    hasRegistered=False
+    if hasattr(self.api,'getAvNavVersion') and self.api.getAvNavVersion() >= 20260617:
+        try:
+          self.api.registerUserApp(self.api.getBaseUrl() + "/index.html", os.path.join('icons','show_chart.svg'),
+                                   title='History',
+                                   name="ui",shortText='History',longText='History')
+          hasRegistered=True
+        except:
+          pass
+    if not hasRegistered:
+      self.api.registerUserApp(self.api.getBaseUrl()+'/index.html',os.path.join('icons','show_chart.svg'),'History')
     while startSequence == self.startSequence:
       rt=self.runInternal()
       if rt is None or rt == self.STOP_RETURN:
