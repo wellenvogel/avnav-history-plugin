@@ -132,6 +132,8 @@ To trigger a package build at GitHub after forking just create a release branch 
 
 Releases
 --------
+[20260701](../../releases/tag/20260701)
+* prepare for upcoming new AvNav API
 
 [20251009](../../releases/tag/20251009)
 
