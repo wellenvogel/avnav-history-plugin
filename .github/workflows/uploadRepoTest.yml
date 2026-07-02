@@ -17,9 +17,10 @@ jobs:
       - name: Create Artifact
         run: echo "test" > test.txt
       - name: Upload Repository
-        uses:  wellenvogel/sftp-upload-action@v1.0
+        uses:  wellenvogel/sftp-upload-action@v3.0
         with:
-          privateKey: '${{ secrets.REPO_KEY }}'
+          #privateKey: '${{ secrets.REPO_KEY }}'
+          password: '${{ secrets.REPO_PASS  }}'
           server: '${{ secrets.REPO_SERVER }}'
           user: '${{ secrets.REPO_USER }}'
           localFile: 'test.txt'
